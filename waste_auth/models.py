@@ -43,7 +43,7 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     address = models.TextField(null=True, blank=True)
     gender = models.CharField(max_length=10, choices=GenderChoices.choices)
     date_of_birth = models.DateField(null=True, blank=True)
-    user_type = models.CharField(max_length=12, choices=UserType.choices)
+    user_type = models.CharField(max_length=12, choices=UserType.choices, default=UserType.USER)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
@@ -54,8 +54,8 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
 
     class Meta:
         ordering = ["-created_at"]
-        verbose_name = "USER"
-        verbose_name_plural = "USER"
+        verbose_name = "USER PROFILE"
+        verbose_name_plural = "USERS PROFILE"
 
     def __str__(self) -> str:
         return self.email
@@ -78,7 +78,6 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     @classmethod
     def sign_up(
         cls,
-        user_type:str,
         first_name: str,
         last_name: str,
         email: str,
@@ -105,7 +104,6 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
             last_name=last_name,
             email=email,
             phone_number=phone_number,
-            user_type=user_type,
             password=password
         )
         otp = OTP.get_otp(
@@ -123,7 +121,7 @@ Hello {user.first_name.capitalize()},\n
 Thank you for registering on our platform! Please verify your account by entering this code below:\n
 {otp}\n\n
 Best regards,\n
-The Team at Liberty Tech X.
+The Team at WasteBoard.
             """
         )
         return user
@@ -402,3 +400,22 @@ class OTP(BaseModel):
                 return {"status": False, "message": "invalid or expired OTP."}
             return {"status": False, "message": "invalid or expired OTP."}
         return {"status": False, "message": "invalid or expired OTP."}
+
+
+
+# class WasteProducts(models.Model):
+
+#     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='waste_products')
+#     waste_type = models.CharField(max_length=50, choices=WASTE_TYPES)
+#     quantity = models.PositiveIntegerField()
+#     weight = models.FloatField(null=True, blank=True)  # Optional field
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
+
+#     class Meta:
+#         ordering = ["-created_at"]
+#         verbose_name = "RECYCLE PRODUCT"
+#         verbose_name_plural = "RECYCLE PRODUCT"
+
+#     def __str__(self):
+#         return f"{self.waste_type} - {self.quantity} units"

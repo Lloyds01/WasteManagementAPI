@@ -23,7 +23,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            "user_type",
+            # "user_type",
             "first_name",
             "middle_name",
             "last_name",
@@ -40,12 +40,6 @@ class UserSerializer(serializers.ModelSerializer):
                 {"detail": "password(s) do not match."}
             )
         attrs.pop("confirm_password")
-
-        # if attrs.get("user_type") == UserType.FOUNDER or UserType.CREDITOR:
-        #     if attrs.get("bussiness_name") is None:
-        #         raise serializers.ValidationError(
-        #         {"detail": "Please provide business name"}
-        #     )
     
         return attrs
 

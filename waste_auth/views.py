@@ -23,7 +23,18 @@ class UserSignUpAPIView(APIView):
         serializer.is_valid(raise_exception=True)
         user = User.sign_up(**serializer.validated_data)
         if user:
-            return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+            response_data = {
+            "status": 201,
+            "message": "User created successfully",
+            "data": {
+                "first_name": serializer.validated_data.get("first_name"),
+                "middle_name": serializer.validated_data.get("middle_name"),
+                "last_name": serializer.validated_data.get("last_name"),
+                "email": serializer.validated_data.get("email"),
+                "phone_number": serializer.validated_data.get("phone_number"),
+            }
+        }
+            return Response(data=response_data, status=status.HTTP_201_CREATED)
         return Response(errors=serializer.errors,  status=status.HTTP_400_BAD_REQUEST)
 
 class UserVerificationAPIView(APIView):
@@ -60,8 +71,20 @@ class UserDetailsAPIView(APIView):
 
     def get(self, request, *args, **kwargs):
         user = request.user
-        serializer = UserSerializer(instance=user)
-        return Response(data=serializer.data, status=status.HTTP_200_OK)
+        # serializer = UserSerializer(instance=user)
+        response_data = {
+            "status": 200,
+            "message": "User Details",
+            "data": {
+                "first_name": user.first_name,
+                "middle_name": user.middle_name,
+                "last_name": user.last_name,
+                "email": user.email,
+                "phone_number": user.phone_number,
+                "email_verified": user.email_verified,
+            }
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
 
     def patch(self, request, *args, **kwargs):
         serializer = UserUpdateSerializer(data=request.data)
