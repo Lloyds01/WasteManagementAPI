@@ -46,6 +46,7 @@ INSTALLED_APPS = [
 
     #INTERNAL APPS
     "waste_auth",
+    "account",
 
 
 

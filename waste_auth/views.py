@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from .models import User, OTP
+from .models import( User, OTP, WasteProduct)
 from .serializers import (
     UserSerializer,
     UserLoginSerializer,
@@ -12,7 +12,7 @@ from .serializers import (
     ChangePasswordSerializer,
     ForgotPasswordSerializer,
     UserPasswordResetSerializer,
-    IndustryCreateSerializer,
+    WasteProductSerializer
 )
 
 # Create your view(s) here.
@@ -32,6 +32,31 @@ class UserSignUpAPIView(APIView):
                 "last_name": serializer.validated_data.get("last_name"),
                 "email": serializer.validated_data.get("email"),
                 "phone_number": serializer.validated_data.get("phone_number"),
+                "user_type": user.user_type,
+            }
+        }
+            return Response(data=response_data, status=status.HTTP_201_CREATED)
+        return Response(errors=serializer.errors,  status=status.HTTP_400_BAD_REQUEST)
+
+class AgentSignUpAPIView(APIView):
+
+    def post(self, request, *args, **kwargs):
+        serializer = UserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = User.sign_up(**serializer.validated_data)
+        if user:
+            user.user_type = "AGENT"
+            user.save()
+            response_data = {
+            "status": 201,
+            "message": "User created successfully",
+            "data": {
+                "first_name": serializer.validated_data.get("first_name"),
+                "middle_name": serializer.validated_data.get("middle_name"),
+                "last_name": serializer.validated_data.get("last_name"),
+                "email": serializer.validated_data.get("email"),
+                "phone_number": serializer.validated_data.get("phone_number"),
+                "user_type": user.user_type,
             }
         }
             return Response(data=response_data, status=status.HTTP_201_CREATED)
@@ -142,24 +167,23 @@ class ResetPasswordAPIView(APIView):
         return Response(data=reset_password, status=status.HTTP_400_BAD_REQUEST)
 
 
-class IndustryCreateAPIView(APIView):
-    def post(self, request):
-        serializer = IndustryCreateSerializer(data=request.data)
+class wasteProductAPIView(APIView):
+    permission_classes = [IsAuthenticated,]
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        serializer = WasteProductSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        industries = serializer.validated_data['industry_name']
-        # Fetch existing industry names
-        existing_names = set(Industry.objects.values_list('industry_name', flat=True))
-        new_industries = [industry_name for industry_name in industries if industry_name not in existing_names]
+        product = WasteProduct.create_product(user=user, **serializer.validated_data)
+        if product:
+            response_data = {
+                "status": 201,
+                "message": "Product created successfully",
+                "data": {
+                    "product": serializer.validated_data.get("waste_type"),
+                    "quantity": serializer.validated_data.get("quantity"),
+                    "weight": serializer.validated_data.get("weight"),
+                }
+            }
+            return Response(data=response_data, status=status.HTTP_201_CREATED)
+        return Response(errors=serializer.errors,  status=status.HTTP_400_BAD_REQUEST)
 
-        # Bulk create industries with the correct field name
-        Industry.objects.bulk_create([Industry(industry_name=industry_name) for industry_name in new_industries])
-        
-        return Response({
-            "created": new_industries,
-            "existing": list(set(industries) - set(new_industries))
-        }, status=status.HTTP_201_CREATED)
-        
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-    

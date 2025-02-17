@@ -30,7 +30,7 @@ class UserSerializer(serializers.ModelSerializer):
             "email",
             "phone_number",
             "password",
-            "confirm_password"
+            "confirm_password",
         ]
 
     def validate(self, attrs):
@@ -140,4 +140,21 @@ class UserPasswordResetSerializer(serializers.Serializer):
                 {"detail": "new password(s) do not match."}
             )
         attrs.pop("confirm_password")
+        return attrs
+
+
+class WasteProductSerializer(serializers.Serializer):
+
+    waste_type = serializers.CharField(max_length=255)
+    quantity = serializers.IntegerField()
+    weight = serializers.FloatField()
+    pickup_date = serializers.DateTimeField()
+    pickup_location = serializers.CharField(max_length=255)
+
+    def validate(self, attrs):
+        if not attrs.get("pickup_date"):
+            raise serializers.ValidationError(
+                {"detail": "pickup_date is required."}
+            )
+
         return attrs

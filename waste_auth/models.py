@@ -10,7 +10,7 @@ from django.utils.translation import gettext as _
 from .managers import UserManager, OTPManager
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from .helpers.reusable import validate_password, email_sender
-from .enums import GenderChoices, UserType
+from .enums import GenderChoices, UserType, WasteType, WasteScheduleStatus
 
 
 # Create your model(s) here.
@@ -82,7 +82,7 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
         last_name: str,
         email: str,
         phone_number: str,
-        password: str
+        password: str,
     ) -> bool:
         """
         Validates and creates a new user instance.
@@ -104,7 +104,7 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
             last_name=last_name,
             email=email,
             phone_number=phone_number,
-            password=password
+            password=password,
         )
         otp = OTP.get_otp(
             type="EMAIL VERIFICATION",
@@ -117,7 +117,7 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
             recipient=[user.email],
             subject="Welcome Onboard",
             text=f"""
-Hello {user.first_name.capitalize()},\n
+Hello {user.first_name},\n
 Thank you for registering on our platform! Please verify your account by entering this code below:\n
 {otp}\n\n
 Best regards,\n
@@ -403,19 +403,62 @@ class OTP(BaseModel):
 
 
 
-# class WasteProducts(models.Model):
+class WasteProduct(models.Model):
 
-#     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='waste_products')
-#     waste_type = models.CharField(max_length=50, choices=WASTE_TYPES)
-#     quantity = models.PositiveIntegerField()
-#     weight = models.FloatField(null=True, blank=True)  # Optional field
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='waste_products')
+    waste_type = models.CharField(max_length=50, choices=WasteType.choices)
+    quantity = models.PositiveIntegerField(null=True, blank=True)
+    weight = models.FloatField(null=True, blank=True) 
+    pickup_location = models.CharField(max_length=255)
+    pickup_date = models.DateTimeField()
+    status = models.CharField(max_length=50, choices=WasteScheduleStatus.choices, default='pending')
+    photo = models.ImageField(upload_to='waste_products/', null=True, blank=True)
+    remarks = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-#     class Meta:
-#         ordering = ["-created_at"]
-#         verbose_name = "RECYCLE PRODUCT"
-#         verbose_name_plural = "RECYCLE PRODUCT"
 
-#     def __str__(self):
-#         return f"{self.waste_type} - {self.quantity} units"
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "RECYCLE PRODUCT"
+        verbose_name_plural = "RECYCLE PRODUCT"
+
+    def __str__(self):
+        return f"{self.waste_type} - {self.quantity} units"
+
+    @classmethod
+    def create_product(cls, user, waste_type, quantity,pickup_date, pickup_location, weight=None):
+        product = cls.objects.create(
+            user=user,
+            waste_type=waste_type,
+            quantity=quantity,
+            weight=weight,
+            pickup_date=pickup_date,
+            pickup_location=pickup_location
+        )
+        return product
+
+
+
+class AgentAssignment(models.Model):
+    agent = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assignments')
+    waste_product = models.ForeignKey(WasteProduct, on_delete=models.CASCADE, related_name='assignments')
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+
+    class Meta:
+        ordering = ["-assigned_at"]
+        verbose_name = "AGENT ASSIGNMENT"
+        verbose_name_plural = "AGENT ASSIGNMENT"
+
+    def __str__(self):
+        return f"Assignment for {self.agent} on {self.waste_product}"
+
+    @classmethod
+    def create_assignment(cls, agent, waste_product):
+        assignment = cls.objects.create(
+            agent=agent,
+            waste_product=waste_product
+        )
+        return assignment

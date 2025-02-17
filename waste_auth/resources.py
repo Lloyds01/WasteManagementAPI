@@ -9,3 +9,11 @@ class UserResource(resources.ModelResource):
 class OTPResource(resources.ModelResource):
     class Meta:
         model = OTP
+
+class AgentAssignmentResource(resources.ModelResource):
+    class Meta:
+        model = AgentAssignment
+
+class WasteProductResource(resources.ModelResource):
+    class Meta:
+        model = WasteProduct
