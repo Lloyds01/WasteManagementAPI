@@ -2,7 +2,8 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
-
+from account.models import AccountSystem, Wallet
+from waste_auth.enums import AccountType
 from .models import( User, OTP, WasteProduct)
 from .serializers import (
     UserSerializer,
@@ -70,6 +71,14 @@ class UserVerificationAPIView(APIView):
         verify = OTP.verify_otp(**serializer.validated_data)
         user = User.objects.filter(email=serializer.validated_data.get("recipient")).last()
         if verify.get("status") == True:
+            create_acct = AccountSystem.create_account(
+                user=user,
+                account_name=user.first_name + " " + user.last_name,
+                account_type=AccountType.COLLECTION,
+                account_provider="VFD",
+                bank_name="VFD Microfinance Bank",
+                bank_code="999999"
+            )
             user.email_verified=True
             user.save()
             return Response(data=verify, status=status.HTTP_200_OK)
@@ -96,7 +105,6 @@ class UserDetailsAPIView(APIView):
 
     def get(self, request, *args, **kwargs):
         user = request.user
-        # serializer = UserSerializer(instance=user)
         response_data = {
             "status": 200,
             "message": "User Details",

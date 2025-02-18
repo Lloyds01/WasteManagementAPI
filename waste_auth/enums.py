@@ -60,3 +60,6 @@ class TransactionEntry(TextChoices):
     DEBIT = "DEBIT", "DEBIT"
     CREDIT = "CREDIT", "CREDIT"
     REVERSAL = "REVERSAL", "REVERSAL"
+
+class WalletType(TextChoices):
+    SPEND="SPEND", "SPEND"

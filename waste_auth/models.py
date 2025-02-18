@@ -38,6 +38,7 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     password = models.CharField(
         max_length=255, validators=[validate_password], editable=False
     )
+    bvn = models.CharField(max_length=250, null=True, blank=True)
     phone_number = models.CharField(max_length=25, unique=True)
     phone_verified = models.BooleanField(default=False)
     address = models.TextField(null=True, blank=True)
@@ -355,7 +356,7 @@ class OTP(BaseModel):
         type: str,
         recipient: str,
         length: int = 6,
-        expiry_time: int = 5
+        expiry_time: int = 20
     ):
         """
         Generate and retrieve a new OTP (One-Time Password) object.
@@ -462,3 +463,19 @@ class AgentAssignment(models.Model):
             waste_product=waste_product
         )
         return assignment
+
+
+
+class ConstantTable(models.Model):
+    account_provider = models.CharField(max_length=300)
+    is_active = models.BooleanField(default=False)
+    
+
+    @classmethod
+    def get_constant_instance(cls):
+        const = cls.objects.filter(is_active=True).last()
+        if const:
+            return const
+        else:
+            const = cls.objects.create()
+            return const
