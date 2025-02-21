@@ -11,7 +11,10 @@ urlpatterns = [
     path("change-password/", ChangePasswordAPIView.as_view()),
     path("forgot-password/", ForgotPasswordAPIView.as_view()),
     path("otp-reset-password/", ResetPasswordAPIView.as_view()),
+
+    #PRODUCTS
     path("product/", wasteProductAPIView.as_view()),
+    path("update_profile/",UserDetailsAPIView.as_view()),
 ]
 
 

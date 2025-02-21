@@ -156,5 +156,13 @@ class WasteProductSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 {"detail": "pickup_date is required."}
             )
-
         return attrs
+
+
+class UserUpdateSerializer(serializers.Serializer):
+    address = serializers.CharField(required=True)
+    gender = serializers.CharField(required=False)
+    date_of_birth = serializers.DateField(required=False)
+    bvn = serializers.CharField(required=True)
+
+   

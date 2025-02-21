@@ -13,8 +13,10 @@ from .serializers import (
     ChangePasswordSerializer,
     ForgotPasswordSerializer,
     UserPasswordResetSerializer,
-    WasteProductSerializer
+    WasteProductSerializer,
+    UserUpdateSerializer
 )
+from .enums import UserType
 
 # Create your view(s) here.
 class UserSignUpAPIView(APIView):
@@ -38,6 +40,7 @@ class UserSignUpAPIView(APIView):
         }
             return Response(data=response_data, status=status.HTTP_201_CREATED)
         return Response(errors=serializer.errors,  status=status.HTTP_400_BAD_REQUEST)
+
 
 class AgentSignUpAPIView(APIView):
 
@@ -181,6 +184,16 @@ class wasteProductAPIView(APIView):
         user = request.user
         serializer = WasteProductSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        if user.user_type is UserType.AGENT:
+            return Response(
+                data={"message": "Only users can create products"},
+                status=status.HTTP_400_BAD_REQUEST)
+
+        if user.address is None:
+            return Response(
+                data={"message": "Please update your profile to add address to help with product collection"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         product = WasteProduct.create_product(user=user, **serializer.validated_data)
         if product:
             response_data = {
@@ -194,4 +207,30 @@ class wasteProductAPIView(APIView):
             }
             return Response(data=response_data, status=status.HTTP_201_CREATED)
         return Response(errors=serializer.errors,  status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserDetailsAPIView(APIView):
+    permission_classes = [IsAuthenticated,]
+    def put(self, request, *args, **kwargs):
+        serializer = UserUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        address = serializer.validated_data.get("address")
+        bvn = serializer.validated_data.get("bvn")
+        user = request.user
+            
+        user.bvn=bvn
+        user.address=address
+        user.save()
+        response_data = {
+                "status": 201,
+                "message": "Profile updated successfully",
+                "data":{
+                    "address":user.address,
+                    "bvn": user.bvn
+                }
+                }
+        
+        return Response(response_data, status=status.HTTP_200_OK)
+
+
 

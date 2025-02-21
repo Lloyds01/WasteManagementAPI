@@ -10,7 +10,7 @@ from django.utils.translation import gettext as _
 from .managers import UserManager, OTPManager
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from .helpers.reusable import validate_password, email_sender
-from .enums import GenderChoices, UserType, WasteType, WasteScheduleStatus
+from .enums import GenderChoices, UserType, WasteType, WasteScheduleStatus, ProductPaymentStatus
 
 
 # Create your model(s) here.
@@ -39,6 +39,7 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
         max_length=255, validators=[validate_password], editable=False
     )
     bvn = models.CharField(max_length=250, null=True, blank=True)
+    bvn_verified = models.BooleanField(default=False)
     phone_number = models.CharField(max_length=25, unique=True)
     phone_verified = models.BooleanField(default=False)
     address = models.TextField(null=True, blank=True)
@@ -410,6 +411,8 @@ class WasteProduct(models.Model):
     waste_type = models.CharField(max_length=50, choices=WasteType.choices)
     quantity = models.PositiveIntegerField(null=True, blank=True)
     weight = models.FloatField(null=True, blank=True) 
+    product_value_amount = models.FloatField(null=True, blank=True)
+    payment_status = models.CharField(max_length=20, choices=ProductPaymentStatus.choices, default=ProductPaymentStatus.PENDING)
     pickup_location = models.CharField(max_length=255)
     pickup_date = models.DateTimeField()
     status = models.CharField(max_length=50, choices=WasteScheduleStatus.choices, default='pending')
@@ -438,7 +441,6 @@ class WasteProduct(models.Model):
             pickup_location=pickup_location
         )
         return product
-
 
 
 class AgentAssignment(models.Model):

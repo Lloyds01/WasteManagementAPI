@@ -63,3 +63,9 @@ class TransactionEntry(TextChoices):
 
 class WalletType(TextChoices):
     SPEND="SPEND", "SPEND"
+
+class ProductPaymentStatus(TextChoices):
+    PENDING = "PENDING", "PENDING"
+    CREDITED = "CREDITED", "CREDITED"
+    FAILED = "FAILED", "FAILED"
+ 
