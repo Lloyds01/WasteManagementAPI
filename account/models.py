@@ -136,126 +136,126 @@ class Wallet(BaseModel):
         )
         return wallet_ins
 
-    # @classmethod
-    # def create_user_wallet(cls, data, user_id, account_type, company_id=None):
+    @classmethod
+    def create_user_wallet(cls, data, user_id, account_type, company_id=None):
 
-    #     create_account_response = VfdBank.create_wallet(**data)
+        create_account_response = VfdBank.create_wallet(**data)
 
-    #     if company_id is None:
-    #         status_code = create_account_response.get("status")
-    #         if status_code == "00":
-    #             data = create_account_response.get("data")
-    #             _account_instance = AccountSystem.objects.filter(
-    #                 user_id=user_id, account_type=account_type
-    #             )
+        if company_id is None:
+            status_code = create_account_response.get("status")
+            if status_code == "00":
+                data = create_account_response.get("data")
+                _account_instance = AccountSystem.objects.filter(
+                    user_id=user_id, account_type=account_type
+                )
 
-    #             if not _account_instance.exists():
+                if not _account_instance.exists():
 
-    #                 account = AccountSystem.objects.create(
-    #                     user_id=user_id,
-    #                     account_provider="VFD",
-    #                     account_number=data.get("accountNo"),
-    #                     account_name=f'{data.get("firstname")} {data.get("lastname")}',
-    #                     account_type=account_type,
-    #                     bank_name="VFD Microfinance Bank",
-    #                     bank_code="999999",
-    #                     payload=create_account_response,
-    #                 )
+                    account = AccountSystem.objects.create(
+                        user_id=user_id,
+                        account_provider="VFD",
+                        account_number=data.get("accountNo"),
+                        account_name=f'{data.get("firstname")} {data.get("lastname")}',
+                        account_type=account_type,
+                        bank_name="VFD Microfinance Bank",
+                        bank_code="999999",
+                        payload=create_account_response,
+                    )
 
-    #                 _create_wallet = cls.objects.create(
-    #                     user_id=user_id, account=account, wallet_type=account_type
-    #                 )
+                    _create_wallet = cls.objects.create(
+                        user_id=user_id, account=account, wallet_type=account_type
+                    )
 
-    #                 return _create_wallet
+                    return _create_wallet
 
-    #             else:
-    #                 return None
+                else:
+                    return None
 
-    #         elif (
-    #             status_code == "929"
-    #             and create_account_response.get("message") == "BVN Exist"
-    #         ):
-    #             # add number to bvn
-    #             user_bvn = data.get("bvn")
-    #             phone = data.get("phone")
-    #             result = user_bvn.split("-")
-    #             phone_result = phone.split("-")
-    #             extrated_phone = phone_result[0]
+            elif (
+                status_code == "929"
+                and create_account_response.get("message") == "BVN Exist"
+            ):
+                # add number to bvn
+                user_bvn = data.get("bvn")
+                phone = data.get("phone")
+                result = user_bvn.split("-")
+                phone_result = phone.split("-")
+                extrated_phone = phone_result[0]
 
-    #             bvn = result[0]
-    #             number_to_add = (
-    #                 int(result[1])
-    #                 + ConstantTable.get_constant_instance().to_add_num_bvn
-    #             )
+                bvn = result[0]
+                number_to_add = (
+                    int(result[1])
+                    + ConstantTable.get_constant_instance().to_add_num_bvn
+                )
 
-    #             data["phone"] = f"{extrated_phone}-{number_to_add}"
-    #             data["bvn"] = f"{bvn}-{number_to_add}"
-    #             create_account_response = VfdBank.create_wallet(**data)
+                data["phone"] = f"{extrated_phone}-{number_to_add}"
+                data["bvn"] = f"{bvn}-{number_to_add}"
+                create_account_response = VfdBank.create_wallet(**data)
 
-    #             status_code = create_account_response.get("status")
+                status_code = create_account_response.get("status")
 
-    #             if status_code == "00":
-    #                 data = create_account_response.get("data")
-    #                 _account_instance = AccountSystem.objects.filter(
-    #                     user_id=user_id, account_type=account_type
-    #                 )
+                if status_code == "00":
+                    data = create_account_response.get("data")
+                    _account_instance = AccountSystem.objects.filter(
+                        user_id=user_id, account_type=account_type
+                    )
 
-    #                 if not _account_instance.exists():
-    #                     account = AccountSystem.objects.create(
-    #                         user_id=user_id,
-    #                         account_provider="VFD",
-    #                         account_number=data.get("accountNo"),
-    #                         account_name=f'{data.get("firstname")} {data.get("lastname")}',
-    #                         account_type=account_type,
-    #                         bank_name="VFD Microfinance Bank",
-    #                         bank_code="999999",
-    #                         payload=create_account_response,
-    #                     )
+                    if not _account_instance.exists():
+                        account = AccountSystem.objects.create(
+                            user_id=user_id,
+                            account_provider="VFD",
+                            account_number=data.get("accountNo"),
+                            account_name=f'{data.get("firstname")} {data.get("lastname")}',
+                            account_type=account_type,
+                            bank_name="VFD Microfinance Bank",
+                            bank_code="999999",
+                            payload=create_account_response,
+                        )
 
-    #                     _create_wallet = cls.objects.create(
-    #                         user_id=user_id, account=account, wallet_type=account_type
-    #                     )
+                        _create_wallet = cls.objects.create(
+                            user_id=user_id, account=account, wallet_type=account_type
+                        )
 
-    #                     return _create_wallet
+                        return _create_wallet
 
-    #             else:
-    #                 AccountCreationFailure.objects.create(
-    #                     user_id=user_id,
-    #                     payload=create_account_response,
-    #                     account_type=account_type,
-    #                     request_payload=data,
-    #                     account_provider="VFD",
-    #                 )
-    #             return None
+                else:
+                    AccountCreationFailure.objects.create(
+                        user_id=user_id,
+                        payload=create_account_response,
+                        account_type=account_type,
+                        request_payload=data,
+                        account_provider="VFD",
+                    )
+                return None
 
-    #     else:
-    #         if create_account_response.get("status") == "00":
-    #             data = create_account_response.get("data")
+        else:
+            if create_account_response.get("status") == "00":
+                data = create_account_response.get("data")
 
-    #             account = AccountSystem.objects.create(
-    #                 user_id=user_id,
-    #                 account_provider="VFD",
-    #                 company_id=company_id,
-    #                 account_number=data.get("accountNo"),
-    #                 account_name=f'{data.get("firstname")} {data.get("lastname")}',
-    #                 account_type=account_type,
-    #                 bank_name="VFD Microfinance Bank",
-    #                 bank_code="999999",
-    #                 payload=create_account_response,
-    #             )
+                account = AccountSystem.objects.create(
+                    user_id=user_id,
+                    account_provider="VFD",
+                    company_id=company_id,
+                    account_number=data.get("accountNo"),
+                    account_name=f'{data.get("firstname")} {data.get("lastname")}',
+                    account_type=account_type,
+                    bank_name="VFD Microfinance Bank",
+                    bank_code="999999",
+                    payload=create_account_response,
+                )
 
-    #             _create_wallet = cls.objects.create(
-    #                 user_id=user_id, account=account, wallet_type=account_type
-    #             )
+                _create_wallet = cls.objects.create(
+                    user_id=user_id, account=account, wallet_type=account_type
+                )
 
-    #             return _create_wallet
-    #         else:
-    #             AccountCreationFailure.objects.create(
-    #                 user_id=user_id,
-    #                 payload=create_account_response,
-    #                 account_type=account_type,
-    #                 account_provider="VFD",
-    #                 request_payload=data,
-    #             )
-    #             return None
+                return _create_wallet
+            else:
+                AccountCreationFailure.objects.create(
+                    user_id=user_id,
+                    payload=create_account_response,
+                    account_type=account_type,
+                    account_provider="VFD",
+                    request_payload=data,
+                )
+                return None
 
