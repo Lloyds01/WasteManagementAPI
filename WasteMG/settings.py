@@ -44,14 +44,18 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 
 
+
     #INTERNAL APPS
     "waste_auth",
     "account",
+    "transactions",
 
 
 
     #EXTERNAL APPS
+    "django_filters",
     "rest_framework",
+    
 ]
 
 MIDDLEWARE = [
@@ -164,6 +168,7 @@ AUTH_USER_MODEL = 'waste_auth.User'
 OTP_SECRET = config('OTP_SECRET', cast=str)
 
 REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
