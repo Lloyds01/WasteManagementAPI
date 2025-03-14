@@ -119,13 +119,14 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
             recipient=[user.email],
             subject="Welcome Onboard",
             text=f"""
-Hello {user.first_name},\n
-Thank you for registering on our platform! Please verify your account by entering this code below:\n
-{otp}\n\n
-Best regards,\n
-The Team at WasteBoard.
-            """
-        )
+        Hello {user.first_name},\n
+        Thank you for registering on our platform! Please verify your account by entering this code below:\n
+        {otp}\n\n
+        Best regards,\n
+        The Team at WasteBoard.
+                    """
+                )
+        print(send_email)
         return user
 
     @classmethod

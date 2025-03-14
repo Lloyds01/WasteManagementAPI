@@ -186,7 +186,7 @@ class wasteProductAPIView(APIView):
         serializer.is_valid(raise_exception=True)
         if user.user_type is UserType.AGENT:
             return Response(
-                data={"message": "Only users can create products"},
+                data={"message": "Only users can schedule recyle products"},
                 status=status.HTTP_400_BAD_REQUEST)
 
         if user.address is None:
@@ -196,6 +196,7 @@ class wasteProductAPIView(APIView):
             )
         product = WasteProduct.create_product(user=user, **serializer.validated_data)
         if product:
+            #ASSIGN AGENT WITHIN THE LOCATION
             response_data = {
                 "status": 201,
                 "message": "Product created successfully",
@@ -229,7 +230,6 @@ class UserDetailsAPIView(APIView):
                     "bvn": user.bvn
                 }
                 }
-        
         return Response(response_data, status=status.HTTP_200_OK)
 
 
