@@ -1,6 +1,6 @@
 from import_export import resources
 from .models import *
-from account.models import AccountSystem, Wallet
+from account.models import (AccountSystem, Wallet, Transaction)
 
 
 
@@ -27,3 +27,7 @@ class AccountSystemResource(resources.ModelResource):
 class WalletResource(resources.ModelResource):
     class Meta:
         model = Wallet
+
+class TransactionResource(resources.ModelResource):
+    class Meta:
+        model = Transaction

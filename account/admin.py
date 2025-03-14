@@ -21,11 +21,3 @@ class WalletResourceAdmin(ImportExportModelAdmin):
         data = [field.name for field in self.model._meta.concrete_fields]
         return data
 
-@admin.register(Transaction)
-class TransactionAdmin(admin.ModelAdmin):
-    list_display = ('user', 'amount', 'type', 'created_at')
-    list_filter = ('type', 'created_at')
-    search_fields = ('user__email', 'description')  
-
-admin.site.register(AccountSystem, AccountSystemResourceAdmin)
-admin.site.register(Wallet, WalletResourceAdmin)

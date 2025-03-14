@@ -1,12 +1,6 @@
 from django.db import models
 from django.conf import settings
 from waste_auth.models import BaseModel, User
-
-
-
-
-
-
 from waste_auth.enums import (
     AccountType,
     DisbursementFormType,
@@ -266,25 +260,48 @@ class Wallet(BaseModel):
                 )
                 return None
             
-            
-class Transaction(models.Model):
-    TRANSACTION_TYPES = (
-        ('deposit', 'Deposit'),
-        ('withdrawal', 'Withdrawal'),
-        ('payment', 'Payment'),
-    )
+def generate_ref():
+    return str(uuid.uuid4())
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='transactions')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
-    description = models.TextField()
-    metadata = models.JSONField(default=dict, blank=True, null=True)  
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+class Transaction(BaseModel):
     
-    def __str__(self):
-        return f"{self.type} - {self.amount} by {self.user.email}"
+    user = models.ForeignKey(
+        User, related_name="transactions", on_delete=models.CASCADE
+    )
+    amount = models.FloatField(validators=[MinValueValidator(0)])
+    transaction_ref = models.UUIDField(default=uuid.uuid4, editable=False)
+    transaction_status = models.CharField(
+        max_length=300,
+        choices=TransactionStatus.choices,
+        default=TransactionStatus.PENDING,
+    )
+    disbursement_source = models.CharField(
+        max_length=300, choices=DisbursementFormType.choices, null=True, blank=True)
+    beneficiary_account_number = models.CharField(max_length=300, null=True, blank=True)
+    beneficiary_bank_code = models.CharField(max_length=300, null=True, blank=True)
+    beneficiary_bank_name = models.CharField(max_length=300, null=True, blank=True)
+    beneficiary_account_name = models.CharField(max_length=300, null=True, blank=True)
+    
+    # --------------------balances-------------------------
+    balance_before = models.FloatField(null=True, blank=True)
+    balance_after = models.FloatField(null=True, blank=True)
+    # ------------------------------------------------------
+    source_account_name = models.CharField(max_length=300, null=True, blank=True)
+    source_account_number = models.CharField(max_length=300, null=True, blank=True)
+    source_bank_code = models.CharField(max_length=300, null=True, blank=True)
+    transaction_type = models.CharField(
+        max_length=300, choices=TransactionType.choices, null=True, blank=True
+    )
+    narration = models.CharField(max_length=500, null=True, blank=True)
+    attempt_payout = models.BooleanField(default=False)
+    is_disbursed = models.BooleanField(default=False)
+    escrow_id = models.CharField(max_length=300, null=True, blank=True)
+    metadata = models.JSONField(default=dict, blank=True, null=True)
+
+    def __str__(self) -> str:
+        return f"{self.borrower}"
 
     class Meta:
-        ordering = ['-created_at']
-
+        ordering = ["-created_at"]
+        verbose_name = "Transactions"
+        verbose_name_plural = "Transactions"
