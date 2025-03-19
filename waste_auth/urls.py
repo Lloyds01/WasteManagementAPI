@@ -15,6 +15,7 @@ urlpatterns = [
     #PRODUCTS
     path("product/", wasteProductAPIView.as_view()),
     path("update_profile/",UserDetailsAPIView.as_view()),
+    
 ]
 
 

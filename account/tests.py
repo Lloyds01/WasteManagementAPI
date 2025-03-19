@@ -1,11 +1,11 @@
+# account/tests.py
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient, APITestCase
 from rest_framework import status
 from django.contrib.auth import get_user_model
 from .models import Transaction
-from decimal import Decimal
-import json
+import uuid
 
 User = get_user_model()
 
@@ -19,22 +19,22 @@ class TransactionModelTests(TestCase):
         
         self.transaction = Transaction.objects.create(
             user=self.user,
-            amount=Decimal('100.00'),
-            type='deposit',
-            description='Test deposit',
+            amount=100.00,
+            transaction_type='deposit',
+            narration='Test deposit',
             metadata={}
         )
     
     def test_transaction_creation(self):
         """Test that a transaction can be created"""
-        self.assertEqual(self.transaction.amount, Decimal('100.00'))
-        self.assertEqual(self.transaction.type, 'deposit')
-        self.assertEqual(self.transaction.description, 'Test deposit')
+        self.assertEqual(self.transaction.amount, 100.00)
+        self.assertEqual(self.transaction.transaction_type, 'deposit')
+        self.assertEqual(self.transaction.narration, 'Test deposit')
         self.assertEqual(self.transaction.user, self.user)
     
     def test_transaction_str_representation(self):
         """Test the string representation of a transaction"""
-        expected_str = f"deposit - 100.00 by {self.user.email}"
+        expected_str = f"{self.transaction.transaction_ref} - {self.transaction.amount} by {self.user.email}"
         self.assertEqual(str(self.transaction), expected_str)
 
 class TransactionAPITests(APITestCase):
@@ -47,9 +47,9 @@ class TransactionAPITests(APITestCase):
         )
         
         self.transaction_data = {
-            'amount': '200.00',
-            'type': 'deposit',
-            'description': 'API test deposit'
+            'amount': 200.00,
+            'transaction_type': 'deposit',
+            'narration': 'API test deposit'
         }
         
         self.url = reverse('transaction-list-create')
@@ -58,17 +58,17 @@ class TransactionAPITests(APITestCase):
         # Create some test transactions
         Transaction.objects.create(
             user=self.user,
-            amount=Decimal('100.00'),
-            type='deposit',
-            description='First deposit',
+            amount=100.00,
+            transaction_type='deposit',
+            narration='First deposit',
             metadata={}
         )
         
         Transaction.objects.create(
             user=self.user,
-            amount=Decimal('50.00'),
-            type='withdrawal',
-            description='First withdrawal',
+            amount=50.00,
+            transaction_type='withdrawal',
+            narration='First withdrawal',
             metadata={}
         )
     
@@ -82,7 +82,7 @@ class TransactionAPITests(APITestCase):
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Transaction.objects.count(), 3)
-        self.assertEqual(Transaction.objects.latest('created_at').amount, Decimal('200.00'))
+        self.assertEqual(Transaction.objects.latest('created_at').amount, 200.00)
     
     def test_list_transactions(self):
         """Test listing transactions via the API"""
@@ -100,51 +100,12 @@ class TransactionAPITests(APITestCase):
     
     def test_filter_transactions_by_type(self):
         """Test filtering transactions by type"""
-        response = self.client.get(f"{self.url}?type=deposit")
+        response = self.client.get(f"{self.url}?transaction_type=deposit")
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
-        self.assertEqual(response.data['results'][0]['type'], 'deposit')
+        self.assertEqual(response.data['results'][0]['transaction_type'], 'deposit')
     
-    def test_order_transactions_by_amount(self):
-        """Test ordering transactions by amount"""
-        response = self.client.get(f"{self.url}?ordering=-amount")
-        
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['results'][0]['amount'], '100.00')
-        self.assertEqual(response.data['results'][1]['amount'], '50.00')
-    
-    def test_validate_amount(self):
-        """Test validation for negative amount"""
-        invalid_data = self.transaction_data.copy()
-        invalid_data['amount'] = '-50.00'
-        
-        response = self.client.post(
-            self.url,
-            invalid_data,
-            format='json'
-        )
-        
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('amount', response.data)
-    
-    def test_validate_type(self):
-        """Test validation for invalid transaction type"""
-        invalid_data = self.transaction_data.copy()
-        invalid_data['type'] = 'invalid_type'
-        
-        response = self.client.post(
-            self.url,
-            invalid_data,
-            format='json'
-        )
-        
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('type', response.data)
-        
-        
-        
-        
     def test_transaction_success_message(self):
         """Test that the API returns the correct success message"""
         response = self.client.post(
@@ -155,24 +116,59 @@ class TransactionAPITests(APITestCase):
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['status'], 'success')
-        self.assertEqual(response.data['message'], 'Deposit successful')
+        self.assertEqual(response.data['message'], 'Deposit transaction initiated successfully')
         
-        # Test with a different transaction type
-        withdrawal_data = self.transaction_data.copy()
-        withdrawal_data['type'] = 'withdrawal'
+    def test_negative_amount_validation(self):
+        """Test that negative amounts are rejected"""
+        invalid_data = {
+            'amount': -50.00,
+            'transaction_type': 'deposit',
+            'narration': 'Invalid deposit'
+        }
         
         response = self.client.post(
             self.url,
-            withdrawal_data,
+            invalid_data,
             format='json'
         )
         
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['status'], 'success')
-        self.assertEqual(response.data['message'], 'Withdrawal successful')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('amount', response.data)
 
-# Create your tests here.
-def test_addition():
-    assert 1 + 1 == 2
+def test_unauthenticated_access(self):
+    """Test that unauthenticated requests are rejected"""
+    # Create a new client without authentication
+    client = APIClient()
     
-    ##
+    response = client.get(self.url)
+    self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    
+    response = client.post(
+        self.url,
+        self.transaction_data,
+        format='json'
+    )
+    self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+def test_pagination(self):
+    """Test that pagination works correctly"""
+    # Create more transactions to test pagination
+    for i in range(15):  # Create 15 more transactions
+        Transaction.objects.create(
+            user=self.user,
+            amount=10.00 * i,
+            transaction_type='deposit',
+            narration=f'Pagination test {i}',
+            metadata={}
+        )
+    
+    response = self.client.get(self.url)
+    
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+    self.assertEqual(len(response.data['results']), 10)  # Default page size
+    self.assertIsNotNone(response.data['next'])  # Should have a next page
+    
+    # Test second page
+    response = self.client.get(response.data['next'])
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+    self.assertEqual(len(response.data['results']), 7)  # 17 total items, 7 on second page

@@ -1,6 +1,8 @@
 from django.db import models
 from django.conf import settings
 from waste_auth.models import BaseModel, User
+import uuid
+
 from waste_auth.enums import (
     AccountType,
     DisbursementFormType,
@@ -263,10 +265,37 @@ class Wallet(BaseModel):
 def generate_ref():
     return str(uuid.uuid4())
 
+
+
+# Define the choices for transaction status and type
+class TransactionStatus(models.TextChoices):
+    PENDING = 'pending', 'Pending'
+    SUCCESSFUL = 'successful', 'Successful'
+    FAILED = 'failed', 'Failed'
+
+class TransactionType(models.TextChoices):
+    DEPOSIT = 'deposit', 'Deposit'
+    WITHDRAWAL = 'withdrawal', 'Withdrawal'
+    PAYMENT = 'payment', 'Payment'
+    TRANSFER = 'transfer', 'Transfer'
+    REFUND = 'refund', 'Refund'
+
+class DisbursementFormType(models.TextChoices):
+    BANK = 'bank', 'Bank'
+    WALLET = 'wallet', 'Wallet'
+    CASH = 'cash', 'Cash'
+
+# Base model for common fields
+class BaseModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
 class Transaction(BaseModel):
-    
     user = models.ForeignKey(
-        User, related_name="transactions", on_delete=models.CASCADE
+        settings.AUTH_USER_MODEL, related_name="transactions", on_delete=models.CASCADE
     )
     amount = models.FloatField(validators=[MinValueValidator(0)])
     transaction_ref = models.UUIDField(default=uuid.uuid4, editable=False)
@@ -290,7 +319,7 @@ class Transaction(BaseModel):
     source_account_number = models.CharField(max_length=300, null=True, blank=True)
     source_bank_code = models.CharField(max_length=300, null=True, blank=True)
     transaction_type = models.CharField(
-        max_length=300, choices=TransactionType.choices, null=True, blank=True
+        max_length=300, choices=TransactionType.choices, null=False, blank=False
     )
     narration = models.CharField(max_length=500, null=True, blank=True)
     attempt_payout = models.BooleanField(default=False)
@@ -299,9 +328,10 @@ class Transaction(BaseModel):
     metadata = models.JSONField(default=dict, blank=True, null=True)
 
     def __str__(self) -> str:
-        return f"{self.borrower}"
+        return f"{self.transaction_ref} - {self.amount} by {self.user.email}"
 
     class Meta:
+        db_table = 'account_transaction' 
         ordering = ["-created_at"]
         verbose_name = "Transactions"
         verbose_name_plural = "Transactions"

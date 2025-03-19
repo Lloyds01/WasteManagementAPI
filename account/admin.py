@@ -1,23 +1,30 @@
+# account/admin.py
 from django.contrib import admin
-from import_export.admin import ImportExportModelAdmin
-from django.contrib.admin import DateFieldListFilter
-from .models import Transaction
-from waste_auth.resources import *
-from .models import *
+from .models import Transaction  # Import other models as needed
 
-class AccountSystemResourceAdmin(ImportExportModelAdmin):
-    resource_class = AccountSystemResource
-    search_fields = ("",)
-    list_filter = ()
-    def get_list_display(self, request):
-        data = [field.name for field in self.model._meta.concrete_fields]
-        return data
-
-class WalletResourceAdmin(ImportExportModelAdmin):
-    resource_class = WalletResource
-    search_fields = ("",)
-    list_filter = ()
-    def get_list_display(self, request):
-        data = [field.name for field in self.model._meta.concrete_fields]
-        return data
-
+@admin.register(Transaction)
+class TransactionAdmin(admin.ModelAdmin):
+    list_display = ('transaction_ref', 'user', 'amount', 'transaction_type', 'transaction_status', 'created_at')
+    list_filter = ('transaction_status', 'transaction_type', 'created_at', 'is_disbursed')
+    search_fields = ('user__email', 'transaction_ref', 'beneficiary_account_name', 'narration')
+    readonly_fields = ('transaction_ref', 'created_at', 'updated_at')
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('user', 'amount', 'transaction_ref', 'transaction_status', 'transaction_type', 'narration')
+        }),
+        ('Beneficiary Details', {
+            'fields': ('beneficiary_account_number', 'beneficiary_bank_code', 'beneficiary_bank_name', 'beneficiary_account_name')
+        }),
+        ('Source Details', {
+            'fields': ('source_account_name', 'source_account_number', 'source_bank_code')
+        }),
+        ('Balance Information', {
+            'fields': ('balance_before', 'balance_after')
+        }),
+        ('Disbursement Information', {
+            'fields': ('disbursement_source', 'attempt_payout', 'is_disbursed', 'escrow_id')
+        }),
+        ('Additional Information', {
+            'fields': ('metadata', 'created_at', 'updated_at')
+        }),
+    )
