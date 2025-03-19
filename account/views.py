@@ -16,7 +16,6 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 class TransactionListCreateView(generics.ListCreateAPIView):
     serializer_class = TransactionSerializer
-    # Change to IsAuthenticated
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ['transaction_status', 'transaction_type', 'created_at']
@@ -48,7 +47,7 @@ class TransactionListCreateView(generics.ListCreateAPIView):
             balance_after = balance_before + amount
         
         serializer.save(
-            user=user,  # Use the authenticated user
+            user=user,  
             metadata=metadata,
             balance_before=balance_before,
             balance_after=balance_after,
@@ -79,7 +78,6 @@ class TransactionListCreateView(generics.ListCreateAPIView):
 
 class TransactionHistoryView(generics.ListAPIView):
     serializer_class = TransactionSerializer
-    # Change to IsAuthenticated
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend, OrderingFilter]
