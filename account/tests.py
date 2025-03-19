@@ -1,4 +1,3 @@
-# account/tests.py
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient, APITestCase
@@ -46,6 +45,9 @@ class TransactionAPITests(APITestCase):
             last_name='User'
         )
         
+        # Added this line to authenticate the client with your user
+        self.client.force_authenticate(user=self.user)
+        
         self.transaction_data = {
             'amount': 200.00,
             'transaction_type': 'deposit',
@@ -55,7 +57,7 @@ class TransactionAPITests(APITestCase):
         self.url = reverse('transaction-list-create')
         self.history_url = reverse('transaction-history')
         
-        # Create some test transactions
+
         Transaction.objects.create(
             user=self.user,
             amount=100.00,
@@ -72,6 +74,7 @@ class TransactionAPITests(APITestCase):
             metadata={}
         )
     
+    
     def test_create_transaction(self):
         """Test creating a transaction via the API"""
         response = self.client.post(
@@ -81,7 +84,7 @@ class TransactionAPITests(APITestCase):
         )
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Transaction.objects.count(), 3)
+        self.assertEqual(Transaction.objects.count(), 3) 
         self.assertEqual(Transaction.objects.latest('created_at').amount, 200.00)
     
     def test_list_transactions(self):
@@ -89,14 +92,14 @@ class TransactionAPITests(APITestCase):
         response = self.client.get(self.url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['results']), 2)  # Assuming pagination is enabled
+        self.assertEqual(len(response.data['results']), 2)  
     
     def test_transaction_history(self):
         """Test the transaction history endpoint"""
         response = self.client.get(self.history_url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['results']), 2)  # Assuming pagination is enabled
+        self.assertEqual(len(response.data['results']), 2)  
     
     def test_filter_transactions_by_type(self):
         """Test filtering transactions by type"""
@@ -135,40 +138,41 @@ class TransactionAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('amount', response.data)
 
-def test_unauthenticated_access(self):
-    """Test that unauthenticated requests are rejected"""
-    # Create a new client without authentication
-    client = APIClient()
-    
-    response = client.get(self.url)
-    self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-    
-    response = client.post(
-        self.url,
-        self.transaction_data,
-        format='json'
-    )
-    self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-def test_pagination(self):
-    """Test that pagination works correctly"""
-    # Create more transactions to test pagination
-    for i in range(15):  # Create 15 more transactions
-        Transaction.objects.create(
-            user=self.user,
-            amount=10.00 * i,
-            transaction_type='deposit',
-            narration=f'Pagination test {i}',
-            metadata={}
+    def test_unauthenticated_access(self):
+        """Test that unauthenticated requests are rejected"""
+        # Create a new client without authentication
+        client = APIClient()
+        
+        response = client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        
+        response = client.post(
+            self.url,
+            self.transaction_data,
+            format='json'
         )
-    
-    response = self.client.get(self.url)
-    
-    self.assertEqual(response.status_code, status.HTTP_200_OK)
-    self.assertEqual(len(response.data['results']), 10)  # Default page size
-    self.assertIsNotNone(response.data['next'])  # Should have a next page
-    
-    # Test second page
-    response = self.client.get(response.data['next'])
-    self.assertEqual(response.status_code, status.HTTP_200_OK)
-    self.assertEqual(len(response.data['results']), 7)  # 17 total items, 7 on second page
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_pagination(self):
+        """Test that pagination works correctly"""
+        # Created more transactions to test pagination
+        for i in range(15):  # Created 15 more transactions
+            Transaction.objects.create(
+                user=self.user,
+                amount=10.00 * i,
+                transaction_type='deposit',
+                narration=f'Pagination test {i}',
+                metadata={}
+            )
+        
+        response = self.client.get(self.url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 10)  # Default page size
+        self.assertIsNotNone(response.data['next'])  # Should have a next page
+        
+        # Test second page
+        response = self.client.get(response.data['next'])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 7)  
+

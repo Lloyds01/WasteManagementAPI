@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Transaction, TransactionType  # Import TransactionType directly
+from .models import Transaction, TransactionType 
 
 class TransactionSerializer(serializers.ModelSerializer):
     user_email = serializers.ReadOnlyField(source='user.email')
@@ -31,7 +31,7 @@ class TransactionSerializer(serializers.ModelSerializer):
         """
         Check that the transaction type is valid.
         """
-        if value and value not in dict(TransactionType.choices).keys():  # Use TransactionType directly
+        if value and value not in dict(TransactionType.choices).keys():  
             valid_types = dict(TransactionType.choices).keys()
             raise serializers.ValidationError(f"Invalid transaction type. Must be one of: {', '.join(valid_types)}")
         return value
