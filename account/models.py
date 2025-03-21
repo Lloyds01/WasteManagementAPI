@@ -46,9 +46,10 @@ class AccountSystem(BaseModel):
         verbose_name = "ACCOUNT SYSTEM"
         verbose_name_plural = "ACCOUNT SYSTEM"
 
+
     @classmethod
     def create_account(cls,user,
-        account_provider, account_name, account_type, bank_name, bank_code, 
+        account_provider, account_name, bank_name, bank_code, 
         ):
         account_number=generate_account_number()
         account = cls.objects.create(
@@ -56,17 +57,13 @@ class AccountSystem(BaseModel):
             account_provider="VFD",
             account_number=account_number,
             account_name=account_name,
-            account_type=account_type,
             bank_name="VFD Microfinance Bank",
             bank_code="999999",
-            # payload=create_account_response
+            payload=""
             )
         Wallet.create_wallet_object(account_ins=account, user=user, wallet_type= WalletType.SPEND)
         return account
 
-    @property
-    def fullname(self):
-        return self.first_name + " " + self.last_name
 
 class AccountCreationFailure(BaseModel):
     account_id = models.UUIDField(default=uuid.uuid4, editable=False)
@@ -86,9 +83,9 @@ class AccountCreationFailure(BaseModel):
     request_payload = models.TextField(null=True, blank=True)
 
     class Meta:
-        # ordering = ["-created_at"]
-        verbose_name = "Account Creation Failure"
-        verbose_name_plural = "Account Creation Failure"
+        ordering = ["-created_at"]
+        verbose_name = "ACCOUNT CREATION FAILURE"
+        verbose_name_plural = "ACCOUNT CREATION FAILURE"
 
 
 class Wallet(BaseModel):
@@ -260,8 +257,8 @@ class Wallet(BaseModel):
                 )
                 return None
             
-def generate_ref():
-    return str(uuid.uuid4())
+# def generate_ref():
+#     return str(uuid.uuid4())
 
 class Transaction(BaseModel):
     
@@ -299,9 +296,9 @@ class Transaction(BaseModel):
     metadata = models.JSONField(default=dict, blank=True, null=True)
 
     def __str__(self) -> str:
-        return f"{self.borrower}"
+        return f"{self.user}"
 
     class Meta:
         ordering = ["-created_at"]
-        verbose_name = "Transactions"
-        verbose_name_plural = "Transactions"
+        verbose_name = "TRANSACTIONS"
+        verbose_name_plural = "TRANSACTIONS"

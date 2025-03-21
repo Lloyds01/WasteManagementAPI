@@ -448,6 +448,7 @@ class AgentAssignment(models.Model):
     agent = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assignments')
     waste_product = models.ForeignKey(WasteProduct, on_delete=models.CASCADE, related_name='assignments')
     assigned_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
 
@@ -468,11 +469,10 @@ class AgentAssignment(models.Model):
         return assignment
 
 
-
 class ConstantTable(models.Model):
     account_provider = models.CharField(max_length=300)
     is_active = models.BooleanField(default=False)
-    
+    weight_value = models.FloatField(blank=True, null=True)
 
     @classmethod
     def get_constant_instance(cls):

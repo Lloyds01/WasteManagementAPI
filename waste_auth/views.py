@@ -26,6 +26,14 @@ class UserSignUpAPIView(APIView):
         serializer.is_valid(raise_exception=True)
         user = User.sign_up(**serializer.validated_data)
         if user:
+            account_name =serializer.validated_data.get("first_name") + " " + serializer.validated_data.get("last_name")
+            account = AccountSystem.create_account(
+                user=user,
+                account_name=account_name,
+                account_provider="VFD",
+                bank_name="VFD Microfinance Bank",
+                bank_code="999999"
+            )
             response_data = {
             "status": 201,
             "message": "User created successfully",

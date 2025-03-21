@@ -20,7 +20,9 @@ class UserResourceAdmin(ImportExportModelAdmin):
 class OTPResourceAdmin(ImportExportModelAdmin):
     resource_class = OTPResource
     search_fields = ("",)
-    list_filter = ()
+    list_filter = (
+        ("created_at", DateFieldListFilter),
+    )
 
     def get_list_display(self, request):
         data = [field.name for field in self.model._meta.concrete_fields]
@@ -29,7 +31,9 @@ class OTPResourceAdmin(ImportExportModelAdmin):
 class AgentAssignmentResourceAdmin(ImportExportModelAdmin):
     resource_class = AgentAssignmentResource
     search_fields = ("",)
-    list_filter = ()
+    list_filter = (
+        ("created_at", DateFieldListFilter),
+    )
 
     def get_list_display(self, request):
         data = [field.name for field in self.model._meta.concrete_fields]
@@ -38,7 +42,8 @@ class AgentAssignmentResourceAdmin(ImportExportModelAdmin):
 class WasteProductResourceAdmin(ImportExportModelAdmin):
     resource_class = WasteProductResource
     search_fields = ("",)
-    list_filter = ()
+    list_filter = (("created_at", DateFieldListFilter),
+    )
 
     def get_list_display(self, request):
         data = [field.name for field in self.model._meta.concrete_fields]
