@@ -8,7 +8,6 @@ class UserResource(resources.ModelResource):
     class Meta:
         model = User
 
-class OTPResource(resources.ModelResource):
     class Meta:
         model = OTP
 
@@ -31,3 +30,11 @@ class WalletResource(resources.ModelResource):
 class TransactionResource(resources.ModelResource):
     class Meta:
         model = Transaction
+
+class OTPResource(resources.ModelResource):
+    class Meta:
+        model = OTP
+
+class RecycleAgentsResource(resources.ModelResource):
+    class Meta:
+        model = RecycleAgents

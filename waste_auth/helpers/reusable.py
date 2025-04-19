@@ -2,7 +2,6 @@ import base64
 import os
 from requests import exceptions, request
 from string import Template, punctuation
-
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as text
@@ -78,12 +77,14 @@ def make_request(request_type: str, params: dict) -> dict:
     """
     try:
         response = request(request_type, **params)
+        # print(response, "HERE IS THE REQUEST MIDDLEWARE BODY !!!!")
         return {
             "status": True,
             "data": response.json(),
             "error": None
         }
     except exceptions.RequestException as error:
+        # print(error, "HERE IS THE ERROR MESSAGE AND EXCEPTION !!!!!")
         return {
             "status": False,
             "data": None,
@@ -149,7 +150,7 @@ def email_sender(
                 url=url,
                 auth=("api", api_key),
                 data={
-                    "from": "ERAMUS Ltd. <postmaster@mg.whispersms.com>",
+                    "from": "Waste Management LTD",
                     "to": recipient,
                     "subject": subject,
                     "html": template,
@@ -180,6 +181,7 @@ def email_sender(
             )
         )
     else:
+        # print("I GOT TO THE ELSE CONDITION !!!!!!!!!!!")
         response = make_request(
             "POST",
             dict(
@@ -193,7 +195,28 @@ def email_sender(
                 }
             )
         )
+        # print(response, "HERE IS THE RESPONSE !!!!")
+
     if response.get("status") == True:
         return dict(email_sender_response=response)
     else:
         return dict(email_sender_response=response)
+
+
+def assign_agent_to_product():
+    from waste_auth.models import User, UserType
+    """ This function assign agent to a newly scheduled product pickup and its checks throuhgh 
+    the agents and assign the most available and the most has the less pickup to do and closest
+    to the user """
+
+    available_agent = User.objects.filter(user_type=UserType.AGENT, is_active=True)
+    for agent in available_agent:
+        # # Check if the agent has any scheduled pickups
+        # if agent.pickup_set.filter(status="scheduled").exists():
+        #     # If the agent has scheduled pickups, assign them to the product
+        #     print(f"Agent {agent.username} has scheduled pickups.")
+        # else:
+        #     # If the agent doesn't have any scheduled pickups, assign them to the product
+        #     print(f"Agent {agent.username} is available for assignment.")
+        print(agent, "AGENT USER NAME")
+
