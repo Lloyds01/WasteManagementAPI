@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from account.models import AccountSystem, Wallet
 from waste_auth.enums import AccountType
-from .models import( User, OTP, WasteProduct)
+from .models import( User, OTP, WasteProduct, RecycleAgents)
 from .serializers import (
     UserSerializer,
     UserLoginSerializer,
@@ -27,13 +27,13 @@ class UserSignUpAPIView(APIView):
         user = User.sign_up(**serializer.validated_data)
         if user:
             account_name =serializer.validated_data.get("first_name") + " " + serializer.validated_data.get("last_name")
-            account = AccountSystem.create_account(
-                user=user,
-                account_name=account_name,
-                account_provider="VFD",
-                bank_name="VFD Microfinance Bank",
-                bank_code="999999"
-            )
+            # account = AccountSystem.create_account(
+            #     user=user,
+            #     account_name=account_name,
+            #     account_provider="VFD",
+            #     bank_name="VFD Microfinance Bank",
+            #     bank_code="999999"
+            # )
             response_data = {
             "status": 201,
             "message": "User created successfully",
@@ -51,12 +51,13 @@ class UserSignUpAPIView(APIView):
 
 
 class AgentSignUpAPIView(APIView):
-
+   
     def post(self, request, *args, **kwargs):
         serializer = UserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = User.sign_up(**serializer.validated_data)
         if user:
+            RecycleAgents.create_agent_instance(user=user)
             user.user_type = "AGENT"
             user.save()
             response_data = {
@@ -77,20 +78,35 @@ class AgentSignUpAPIView(APIView):
 class UserVerificationAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
-        serializer = UserVerificationSerializer(data=request.data)
+        serializer = UserEmailVerificationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         verify = OTP.verify_otp(**serializer.validated_data)
         user = User.objects.filter(email=serializer.validated_data.get("recipient")).last()
         if verify.get("status") == True:
-            create_acct = AccountSystem.create_account(
-                user=user,
-                account_name=user.first_name + " " + user.last_name,
-                account_type=AccountType.COLLECTION,
-                account_provider="VFD",
-                bank_name="VFD Microfinance Bank",
-                bank_code="999999"
-            )
+            # create_acct = AccountSystem.create_account(
+            #     user=user,
+            #     account_name=user.first_name + " " + user.last_name,
+            #     account_type=AccountType.COLLECTION,
+            #     account_provider="VFD",
+            #     bank_name="VFD Microfinance Bank",
+            #     bank_code="999999"
+            # )
             user.email_verified=True
+            user.save()
+            return Response(data=verify, status=status.HTTP_200_OK)
+        return Response(data=verify, status=status.HTTP_400_BAD_REQUEST)
+
+class VerifyPhoneAPIView(APIView):
+    """Send OTP to verify phone number"""
+
+    def post(self, request, *args, **kwargs):
+        serializer = UserphoneVerificationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        verify = OTP.verify_otp(**serializer.validated_data)
+        user = User.objects.filter(email=serializer.validated_data.get("recipient")).last()
+        if verify.get("status") == True:
+          
+            user.phone_verified=True
             user.save()
             return Response(data=verify, status=status.HTTP_200_OK)
         return Response(data=verify, status=status.HTTP_400_BAD_REQUEST)
@@ -199,7 +215,7 @@ class wasteProductAPIView(APIView):
 
         if user.address is None:
             return Response(
-                data={"message": "Please update your profile to add address to help with product collection"},
+                data={"message": "Please update your profile to add address to help with product valuation and collection"},
                 status=status.HTTP_400_BAD_REQUEST
             )
         product = WasteProduct.create_product(user=user, **serializer.validated_data)

@@ -34,3 +34,7 @@ class TransactionResource(resources.ModelResource):
 class OTPResource(resources.ModelResource):
     class Meta:
         model = OTP
+
+class RecycleAgentsResource(resources.ModelResource):
+    class Meta:
+        model = RecycleAgents

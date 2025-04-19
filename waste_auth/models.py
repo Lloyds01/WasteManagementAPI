@@ -46,7 +46,7 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     gender = models.CharField(max_length=10, choices=GenderChoices.choices)
     date_of_birth = models.DateField(null=True, blank=True)
     user_type = models.CharField(max_length=12, choices=UserType.choices, default=UserType.USER)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
 
     objects = UserManager()
@@ -450,7 +450,6 @@ class AgentAssignment(models.Model):
     assigned_at = models.DateTimeField(auto_now_add=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
 
     class Meta:
         ordering = ["-assigned_at"]
@@ -467,6 +466,53 @@ class AgentAssignment(models.Model):
             waste_product=waste_product
         )
         return assignment
+
+
+class RecycleAgents(models.Model):
+    agent = models.ForeignKey(User, on_delete=models.CASCADE, related_name='agents')
+    last_assigned_product = models.ForeignKey(WasteProduct, on_delete=models.CASCADE, related_name='last_assigned_product', null=True, blank=True)
+    pending_pickups_count = models.IntegerField(default=0)
+    total_pickups_count = models.IntegerField(default=0)
+    last_pickup_date= models.DateTimeField(null=True, blank=True)
+    pickup_success_rate = models.FloatField(default=0.0)
+    customer_rating = models.FloatField(default=0.0)
+    issues_reported_count = models.IntegerField(default=0)
+    identification_number = models.CharField(max_length=255, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = " RECYCLE AGENT"
+        verbose_name_plural = "RECYCLE AGENT"
+
+    def __str__(self):
+        return f"{self.agent}"
+
+    @classmethod
+    def create_agent_instance(cls, user):
+        """ This function creates a recycle agent instance """
+        recycle_agent = cls.objects.create(
+            agent=user
+        )
+        return recycle_agent
+    
+    def assign_agent_to_product():
+    
+        """ This function assign agent to a newly scheduled product pickup and its checks throuhgh 
+        the agents and assign the most available and the most has the less pickup to do and closest
+        to the user """
+
+        available_agent = User.objects.filter(user_type=UserType.AGENT, is_active=True)
+        for agent in available_agent:
+            # if agent.pending_pickups_count == 0:
+            #     # Assign the agent to the product
+            #     AgentAssignment.create_assignment(agent, product)
+            #     # Update the agent's pickup count
+            #     agent.pending_pickups_count += 1
+            #     agent.save()
+            #     return agent
+            print(agent, "AGENT USER NAME")
 
 
 class ConstantTable(models.Model):
