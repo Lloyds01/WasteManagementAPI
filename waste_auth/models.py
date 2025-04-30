@@ -145,10 +145,10 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
                 - message (str): (Optional) A message indicating that the user profile is not verified.
         """
         user = authenticate(email=email, password=password)
-        print(user, email, password)
+        # print(user, email, password)
         if user is not None:
             if not user.email_verified:
-                return {"message": "USER PROFILE is not verified."}
+                return {"message": "user email is not verified."}
             token = RefreshToken.for_user(user)
             user.last_login = datetime.now(
                 tz=pytz.timezone(settings.TIME_ZONE)
