@@ -14,7 +14,8 @@ from .serializers import (
     ForgotPasswordSerializer,
     UserPasswordResetSerializer,
     WasteProductSerializer,
-    UserUpdateSerializer
+    UserUpdateSerializer,
+    
 )
 from .enums import UserType
 
@@ -78,7 +79,7 @@ class AgentSignUpAPIView(APIView):
 class UserVerificationAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
-        serializer = UserEmailVerificationSerializer(data=request.data)
+        serializer = UserVerificationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         verify = OTP.verify_otp(**serializer.validated_data)
         user = User.objects.filter(email=serializer.validated_data.get("recipient")).last()
@@ -123,7 +124,7 @@ class UserSignInAPIView(APIView):
             return Response(data=user,  status=status.HTTP_412_PRECONDITION_FAILED)
         else:
             return Response(
-                data={"message": "invalid credentials (wrong email or password)."},
+                data={"message": "invalid credentials (rong email or password)."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 

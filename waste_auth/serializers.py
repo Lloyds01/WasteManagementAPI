@@ -49,7 +49,7 @@ class UserLoginSerializer(serializers.Serializer):
     password = serializers.CharField(
         required=True,
         style={"input_type": "password"},
-        validators=[validate_password],
+        # validators=[validate_password],
         write_only=True
     )
 
@@ -104,6 +104,10 @@ class ForgotPasswordSerializer(serializers.Serializer):
 class UserVerificationSerializer(serializers.Serializer):
     recipient = serializers.EmailField()
     otp = serializers.CharField(max_length=6)
+
+# class UserphoneVerificationSerializer(serializers.Serializer):
+#     phone = serializers.CharField()
+#     otp = serializers.CharField(max_length=6)
 
 
 class UserUpdateSerializer(serializers.Serializer):
