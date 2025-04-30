@@ -84,14 +84,7 @@ class UserVerificationAPIView(APIView):
         verify = OTP.verify_otp(**serializer.validated_data)
         user = User.objects.filter(email=serializer.validated_data.get("recipient")).last()
         if verify.get("status") == True:
-            # create_acct = AccountSystem.create_account(
-            #     user=user,
-            #     account_name=user.first_name + " " + user.last_name,
-            #     account_type=AccountType.COLLECTION,
-            #     account_provider="VFD",
-            #     bank_name="VFD Microfinance Bank",
-            #     bank_code="999999"
-            # )
+           
             user.email_verified=True
             user.save()
             return Response(data=verify, status=status.HTTP_200_OK)
@@ -124,7 +117,7 @@ class UserSignInAPIView(APIView):
             return Response(data=user,  status=status.HTTP_412_PRECONDITION_FAILED)
         else:
             return Response(
-                data={"message": "invalid credentials (rong email or password)."},
+                data={"message": "invalid credentials (wrong email or password)."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
