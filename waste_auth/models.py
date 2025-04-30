@@ -144,8 +144,10 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
                 - access (str): The access token for the authenticated user.
                 - message (str): (Optional) A message indicating that the user profile is not verified.
         """
-        # print(email, password, "EMAIL AND PASSWORD")    user = authenticate(email=email, password=password)
-      
+        # print(email, password, "EMAIL AND PASSWORD")
+        user = authenticate(email=email, password=password)
+        # print(user, "USER EMAIL INFORMATION")
+        # print(user, "USER EMAIL INFORMATION")
         if user is not None:
             if not user.email_verified:
                 return {"message": "USER PROFILE is not verified."}
