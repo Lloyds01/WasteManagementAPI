@@ -28,6 +28,10 @@ class DisbursementFormType(models.TextChoices):
     VFD_WALLET = "VFD_WALLET", _("VFD")
     MONNIFY = "MONNIFY", _("MONNIFY")
 
+class AccountProvider(models.TextChoices):
+    VFD_WALLET = "VFD_WALLET", _("VFD")
+    MONNIFY = "MONNIFY", _("MONNIFY")
+
 
 class DisbursementFormType(models.TextChoices):
     VFD_WALLET = "VFD_WALLET", _("VFD")

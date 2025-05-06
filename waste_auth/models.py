@@ -10,7 +10,7 @@ from django.utils.translation import gettext as _
 from .managers import UserManager, OTPManager
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from .helpers.reusable import validate_password, email_sender
-from .enums import GenderChoices, UserType, WasteType, WasteScheduleStatus, ProductPaymentStatus
+from .enums import GenderChoices, UserType, WasteType, WasteScheduleStatus, ProductPaymentStatus, AccountProvider
 
 
 # Create your model(s) here.
@@ -40,13 +40,13 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     )
     bvn = models.CharField(max_length=250, null=True, blank=True)
     bvn_verified = models.BooleanField(default=False)
-    phone_number = models.CharField(max_length=25, unique=True)
+    phone_number = models.CharField(max_length=25, unique=True, blank=True, null=True)
     phone_verified = models.BooleanField(default=False)
     address = models.TextField(null=True, blank=True)
     gender = models.CharField(max_length=10, choices=GenderChoices.choices)
     date_of_birth = models.DateField(null=True, blank=True)
     user_type = models.CharField(max_length=12, choices=UserType.choices, default=UserType.USER)
-    is_active = models.BooleanField(default=False)
+    # is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
 
     objects = UserManager()
@@ -130,6 +130,62 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
         return user
 
     @classmethod
+    def agent_sign_up(
+        cls,
+        first_name: str,
+        last_name: str,
+        email: str,
+        phone_number: str,
+        password: str,
+        bvn: str,
+        address: str,
+    ) -> bool:
+        """
+        Validates and creates a new user instance.
+        Args:
+            cls (class): The class reference for the user model.
+            first_name (str): The first name of the user.
+            last_name (str): The last name of the user.
+            email (str): The email address of the user.
+            phone_number (str): The phone number of the user.
+            password (str): The password for the user.
+            is_investor (bool): Optional. Whether the user is an investor. Default is False.
+            is_account_manager (bool): Optional. Whether the user is an account manager. Default is False.
+        Returns:
+            bool: True if the user instance is created successfully.
+
+        """
+        user = cls.objects.create_user(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            phone_number=phone_number,
+            password=password,
+            bvn=bvn,
+            address=address,
+        )
+        otp = OTP.get_otp(
+            type="EMAIL VERIFICATION",
+            recipient=email,
+            length=6,
+            expiry_time=10
+        )
+        print(otp, "TESTING OTP GENERATOR")
+        send_email = email_sender(
+            recipient=[user.email],
+            subject="Welcome Onboard",
+            text=f"""
+        Hello {user.first_name},\n
+        Thank you for registering on our platform! Please verify your account by entering this code below:\n
+        {otp}\n\n
+        Best regards,\n
+        The Team at WasteBoard.
+                    """
+                )
+        print(send_email)
+        return user
+
+    @classmethod
     def sign_in(cls, email: str, password: str) -> dict or None:
         """
         Authenticates a user with the provided email and password, generating a token for successful sign-in.
@@ -145,10 +201,10 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
                 - message (str): (Optional) A message indicating that the user profile is not verified.
         """
         user = authenticate(email=email, password=password)
-        # print(user, email, password)
+        print(user, email, password)
         if user is not None:
             if not user.email_verified:
-                return {"message": "user email is not verified."}
+                return {"message": "USER PROFILE is not verified."}
             token = RefreshToken.for_user(user)
             user.last_login = datetime.now(
                 tz=pytz.timezone(settings.TIME_ZONE)
@@ -409,15 +465,14 @@ class OTP(BaseModel):
 class WasteProduct(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='waste_products')
+    agent = models.ForeignKey(to="RecycleAgents", on_delete=models.CASCADE, related_name='agent_waste_products', null=True, blank=True)
     waste_type = models.CharField(max_length=50, choices=WasteType.choices)
-    quantity = models.PositiveIntegerField(null=True, blank=True)
     weight = models.FloatField(null=True, blank=True) 
     product_value_amount = models.FloatField(null=True, blank=True)
     payment_status = models.CharField(max_length=20, choices=ProductPaymentStatus.choices, default=ProductPaymentStatus.PENDING)
     pickup_location = models.CharField(max_length=255)
     pickup_date = models.DateTimeField()
     status = models.CharField(max_length=50, choices=WasteScheduleStatus.choices, default='pending')
-    photo = models.ImageField(upload_to='waste_products/', null=True, blank=True)
     remarks = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -429,17 +484,17 @@ class WasteProduct(models.Model):
         verbose_name_plural = "RECYCLE PRODUCT"
 
     def __str__(self):
-        return f"{self.waste_type} - {self.quantity} units"
+        return f"{self.waste_type} "
 
     @classmethod
-    def create_product(cls, user, waste_type, quantity,pickup_date, pickup_location, weight=None):
+    def create_product(cls, user, waste_type ,pickup_date, weight=None):
         product = cls.objects.create(
             user=user,
             waste_type=waste_type,
-            quantity=quantity,
-            weight=weight,
+            # quantity=quantity,
+            # weight=weight,
             pickup_date=pickup_date,
-            pickup_location=pickup_location
+            # pickup_location=pickup_location
         )
         return product
 
@@ -516,9 +571,35 @@ class RecycleAgents(models.Model):
 
 
 class ConstantTable(models.Model):
-    account_provider = models.CharField(max_length=300)
+    account_provider = models.CharField(max_length=10, choices=AccountProvider.choices)
     is_active = models.BooleanField(default=False)
     weight_value = models.FloatField(blank=True, null=True)
+    estate_address = models.JSONField(
+        default=[
+        {
+            "estate_name": "Bickersteth",
+            "keywords": ["Bickersteth", "iyana church", "iwaya"],
+        },
+        {
+            "estate_name": "Ogudu GRA",
+            "keywords": ["ogudu", "gra", "ogudu gra"],
+        },
+        {
+            "estate_name": "Magodo Phase 2",
+            "keywords": ["magodo", "phase 2", "magodo shangisha"],
+        }
+    ]
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "CONSTANT TABLE"
+        verbose_name_plural = "CONSTANT TABLE"
+
+    def __str__(self):
+        return f"{self.weight_value}"
 
     @classmethod
     def get_constant_instance(cls):

@@ -38,3 +38,7 @@ class OTPResource(resources.ModelResource):
 class RecycleAgentsResource(resources.ModelResource):
     class Meta:
         model = RecycleAgents
+
+class ConstantTableResource(resources.ModelResource):
+    class Meta:
+        model = ConstantTable

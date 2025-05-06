@@ -15,6 +15,7 @@ from .serializers import (
     UserPasswordResetSerializer,
     WasteProductSerializer,
     UserUpdateSerializer,
+    AgentSerializer
     
 )
 from .enums import UserType
@@ -28,13 +29,7 @@ class UserSignUpAPIView(APIView):
         user = User.sign_up(**serializer.validated_data)
         if user:
             account_name =serializer.validated_data.get("first_name") + " " + serializer.validated_data.get("last_name")
-            # account = AccountSystem.create_account(
-            #     user=user,
-            #     account_name=account_name,
-            #     account_provider="VFD",
-            #     bank_name="VFD Microfinance Bank",
-            #     bank_code="999999"
-            # )
+        
             response_data = {
             "status": 201,
             "message": "User created successfully",
@@ -54,9 +49,9 @@ class UserSignUpAPIView(APIView):
 class AgentSignUpAPIView(APIView):
    
     def post(self, request, *args, **kwargs):
-        serializer = UserSerializer(data=request.data)
+        serializer = AgentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = User.sign_up(**serializer.validated_data)
+        user = User.agent_sign_up(**serializer.validated_data)
         if user:
             RecycleAgents.create_agent_instance(user=user)
             user.user_type = "AGENT"
@@ -84,7 +79,6 @@ class UserVerificationAPIView(APIView):
         verify = OTP.verify_otp(**serializer.validated_data)
         user = User.objects.filter(email=serializer.validated_data.get("recipient")).last()
         if verify.get("status") == True:
-           
             user.email_verified=True
             user.save()
             return Response(data=verify, status=status.HTTP_200_OK)
@@ -99,7 +93,6 @@ class VerifyPhoneAPIView(APIView):
         verify = OTP.verify_otp(**serializer.validated_data)
         user = User.objects.filter(email=serializer.validated_data.get("recipient")).last()
         if verify.get("status") == True:
-          
             user.phone_verified=True
             user.save()
             return Response(data=verify, status=status.HTTP_200_OK)
@@ -136,6 +129,8 @@ class UserDetailsAPIView(APIView):
                 "email": user.email,
                 "phone_number": user.phone_number,
                 "email_verified": user.email_verified,
+                "user_type":user.user_type
+
             }
         }
         return Response(response_data, status=status.HTTP_200_OK)
@@ -198,29 +193,65 @@ class ResetPasswordAPIView(APIView):
 
 class wasteProductAPIView(APIView):
     permission_classes = [IsAuthenticated,]
+    """
+    Waste Product Creation API Endpoint
+    
+    This method handles the creation of waste products for users with specific validation checks:
+    
+    Permissions:
+    - Requires authenticated user
+    - User must NOT be an AGENT type
+    - User must have a profile address set
+    
+    Validation Checks:
+    1. Prevents agents from scheduling recycle products
+    2. Ensures user has a valid address before product creation
+    3. Creates waste product using WasteProduct.create_product() method
+    
+    Request Parameters:
+    - waste_type: Type of waste product
+    - quantity: Quantity of waste product
+    - weight: Weight of waste product
+    
+    Response Scenarios:
+    - 201 (Success): Product created successfully with product details
+    - 400 (Bad Request): 
+        - If user is an agent
+        - If user lacks profile address
+        - If serializer validation fails
+    
+    Note: This method includes a commented placeholder for agent assignment logic
+    """
     def post(self, request, *args, **kwargs):
         user = request.user
         serializer = WasteProductSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        if user.user_type is UserType.AGENT:
+    
+        if user.user_type == UserType.AGENT:
             return Response(
                 data={"message": "Only users can schedule recyle products"},
                 status=status.HTTP_400_BAD_REQUEST)
 
-        if user.address is None:
+        if user.address is None or user.bvn is None:
             return Response(
-                data={"message": "Please update your profile to add address to help with product valuation and collection"},
+                data={"message": "Please update your profile to add BVN and address to help with product valuation and collection"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if user.bvn is not None and user.bvn_verified is False:
+            return Response(
+                data={"message": "Please provide a correct BVN for verification to help with product valuation,collection and payment"},
                 status=status.HTTP_400_BAD_REQUEST
             )
         product = WasteProduct.create_product(user=user, **serializer.validated_data)
         if product:
             #ASSIGN AGENT WITHIN THE LOCATION
+
             response_data = {
                 "status": 201,
                 "message": "Product created successfully",
                 "data": {
                     "product": serializer.validated_data.get("waste_type"),
-                    "quantity": serializer.validated_data.get("quantity"),
+                    # "quantity": serializer.validated_data.get("quantity"),
                     "weight": serializer.validated_data.get("weight"),
                 }
             }
@@ -228,7 +259,7 @@ class wasteProductAPIView(APIView):
         return Response(errors=serializer.errors,  status=status.HTTP_400_BAD_REQUEST)
 
 
-class UserDetailsAPIView(APIView):
+class UpdateUserDetailsAPIView(APIView):
     permission_classes = [IsAuthenticated,]
     def put(self, request, *args, **kwargs):
         serializer = UserUpdateSerializer(data=request.data)
@@ -250,5 +281,14 @@ class UserDetailsAPIView(APIView):
                 }
         return Response(response_data, status=status.HTTP_200_OK)
 
+class UserProfileAPIView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def patch(self, request, *args, **kwargs):
+        user = request.user
+        serializer = UserProfileSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Profile updated successfully", "data": serializer.data}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

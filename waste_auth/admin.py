@@ -59,8 +59,19 @@ class RecycleAgentsResourceAdmin(ImportExportModelAdmin):
         data = [field.name for field in self.model._meta.concrete_fields]
         return data
 
+class ConstantTableResourceAdmin(ImportExportModelAdmin):
+    resource_class = ConstantTableResource
+    search_fields = ("",)
+    list_filter = (("created_at", DateFieldListFilter),
+    )
+
+    def get_list_display(self, request):
+        data = [field.name for field in self.model._meta.concrete_fields]
+        return data
+
 admin.site.register(User, UserResourceAdmin)
 admin.site.register(WasteProduct, WasteProductResourceAdmin)
 admin.site.register(AgentAssignment, AgentAssignmentResourceAdmin)
 admin.site.register(OTP, OTPResourceAdmin)
 admin.site.register(RecycleAgents, RecycleAgentsResourceAdmin)
+admin.site.register(ConstantTable, ConstantTableResourceAdmin)
