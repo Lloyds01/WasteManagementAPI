@@ -44,12 +44,53 @@ class UserSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class AgentSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(
+        required=True,
+        style={"input_type": "password"},
+        validators=[validate_password],
+        write_only=True
+    )
+    confirm_password = serializers.CharField(
+        required=True,
+        style={"input_type": "password"},
+        validators=[validate_password],
+        write_only=True
+    )
+    bvn = serializers.CharField(required=True)
+    address = serializers.CharField(required=True)
+
+
+    class Meta:
+        model = User
+        fields = [
+            "first_name",
+            "middle_name",
+            "last_name",
+            "email",
+            "phone_number",
+            "password",
+            "confirm_password",
+            "bvn",
+            "address",
+        ]
+
+    def validate(self, attrs):
+
+        if attrs.get("password") != attrs.get("confirm_password"):
+            raise serializers.ValidationError(
+                {"detail": "password(s) do not match."}
+            )
+        attrs.pop("confirm_password")
+    
+        return attrs
+
 class UserLoginSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     password = serializers.CharField(
         required=True,
         style={"input_type": "password"},
-        validators=[validate_password],
+        # validators=[validate_password],
         write_only=True
     )
 
@@ -105,6 +146,10 @@ class UserVerificationSerializer(serializers.Serializer):
     recipient = serializers.EmailField()
     otp = serializers.CharField(max_length=6)
 
+# class UserphoneVerificationSerializer(serializers.Serializer):
+#     phone = serializers.CharField()
+#     otp = serializers.CharField(max_length=6)
+
 
 class UserUpdateSerializer(serializers.Serializer):
     first_name = serializers.CharField(required=False)
@@ -146,10 +191,7 @@ class UserPasswordResetSerializer(serializers.Serializer):
 class WasteProductSerializer(serializers.Serializer):
 
     waste_type = serializers.CharField(max_length=255)
-    quantity = serializers.IntegerField()
-    weight = serializers.FloatField()
     pickup_date = serializers.DateTimeField()
-    pickup_location = serializers.CharField(max_length=255)
 
     def validate(self, attrs):
         if not attrs.get("pickup_date"):
@@ -158,11 +200,18 @@ class WasteProductSerializer(serializers.Serializer):
             )
         return attrs
 
-
 class UserUpdateSerializer(serializers.Serializer):
     address = serializers.CharField(required=True)
     gender = serializers.CharField(required=False)
     date_of_birth = serializers.DateField(required=False)
     bvn = serializers.CharField(required=True)
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['phone', 'address', "bvn", "gender", "date_of_birth"]  # Add any relevant fields
+       
+
 
    

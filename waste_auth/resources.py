@@ -1,6 +1,6 @@
 from import_export import resources
 from .models import *
-from account.models import AccountSystem, Wallet
+from account.models import (AccountSystem, Wallet, Transaction)
 
 
 
@@ -8,7 +8,6 @@ class UserResource(resources.ModelResource):
     class Meta:
         model = User
 
-class OTPResource(resources.ModelResource):
     class Meta:
         model = OTP
 
@@ -27,3 +26,19 @@ class AccountSystemResource(resources.ModelResource):
 class WalletResource(resources.ModelResource):
     class Meta:
         model = Wallet
+
+class TransactionResource(resources.ModelResource):
+    class Meta:
+        model = Transaction
+
+class OTPResource(resources.ModelResource):
+    class Meta:
+        model = OTP
+
+class RecycleAgentsResource(resources.ModelResource):
+    class Meta:
+        model = RecycleAgents
+
+class ConstantTableResource(resources.ModelResource):
+    class Meta:
+        model = ConstantTable

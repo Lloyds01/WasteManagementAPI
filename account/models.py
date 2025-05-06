@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from waste_auth.models import BaseModel, User
 from waste_auth.enums import (
     AccountType,
@@ -45,9 +46,10 @@ class AccountSystem(BaseModel):
         verbose_name = "ACCOUNT SYSTEM"
         verbose_name_plural = "ACCOUNT SYSTEM"
 
+
     @classmethod
     def create_account(cls,user,
-        account_provider, account_name, account_type, bank_name, bank_code, 
+        account_provider, account_name, bank_name, bank_code, 
         ):
         account_number=generate_account_number()
         account = cls.objects.create(
@@ -55,17 +57,13 @@ class AccountSystem(BaseModel):
             account_provider="VFD",
             account_number=account_number,
             account_name=account_name,
-            account_type=account_type,
             bank_name="VFD Microfinance Bank",
             bank_code="999999",
-            # payload=create_account_response
+            payload=""
             )
         Wallet.create_wallet_object(account_ins=account, user=user, wallet_type= WalletType.SPEND)
         return account
 
-    @property
-    def fullname(self):
-        return self.first_name + " " + self.last_name
 
 class AccountCreationFailure(BaseModel):
     account_id = models.UUIDField(default=uuid.uuid4, editable=False)
@@ -85,9 +83,9 @@ class AccountCreationFailure(BaseModel):
     request_payload = models.TextField(null=True, blank=True)
 
     class Meta:
-        # ordering = ["-created_at"]
-        verbose_name = "Account Creation Failure"
-        verbose_name_plural = "Account Creation Failure"
+        ordering = ["-created_at"]
+        verbose_name = "ACCOUNT CREATION FAILURE"
+        verbose_name_plural = "ACCOUNT CREATION FAILURE"
 
 
 class Wallet(BaseModel):
@@ -137,20 +135,19 @@ class Wallet(BaseModel):
         return wallet_ins
 
     @classmethod
-    def create_user_wallet(cls, data, user_id, account_type, company_id=None):
+    def create_user_wallet(cls, data, user_id, account_type):
+        const = ConstantTable.get_constant_instance()
+        account_provider = const.account_provider
 
-        create_account_response = VfdBank.create_wallet(**data)
-
-        if company_id is None:
+        if account_provider == AccountProvider.VFD:
+            create_account_response = VfdBank.create_wallet(**data)
             status_code = create_account_response.get("status")
             if status_code == "00":
                 data = create_account_response.get("data")
                 _account_instance = AccountSystem.objects.filter(
                     user_id=user_id, account_type=account_type
                 )
-
                 if not _account_instance.exists():
-
                     account = AccountSystem.objects.create(
                         user_id=user_id,
                         account_provider="VFD",
@@ -215,47 +212,93 @@ class Wallet(BaseModel):
                         _create_wallet = cls.objects.create(
                             user_id=user_id, account=account, wallet_type=account_type
                         )
-
                         return _create_wallet
+                    else:
+                        AccountCreationFailure.objects.create(
+                            user_id=user_id,
+                            payload=create_account_response,
+                            account_type=account_type,
+                            request_payload=data,
+                            account_provider="VFD",
+                        )
+                    return None
 
+            else:
+                if create_account_response.get("status") == "00":
+                    data = create_account_response.get("data")
+
+                    account = AccountSystem.objects.create(
+                        user_id=user_id,
+                        account_provider="VFD",
+                        company_id=company_id,
+                        account_number=data.get("accountNo"),
+                        account_name=f'{data.get("firstname")} {data.get("lastname")}',
+                        account_type=account_type,
+                        bank_name="VFD Microfinance Bank",
+                        bank_code="999999",
+                        payload=create_account_response,
+                    )
+
+                    _create_wallet = cls.objects.create(
+                        user_id=user_id, account=account, wallet_type=account_type
+                    )
+
+                    return _create_wallet
                 else:
                     AccountCreationFailure.objects.create(
                         user_id=user_id,
                         payload=create_account_response,
                         account_type=account_type,
-                        request_payload=data,
                         account_provider="VFD",
+                        request_payload=data,
                     )
-                return None
+                    return None
+            
+        elif account_provider == AccountProvider.MONNIFY:
+            create_account_response = VfdBank.create_wallet(**data)
+            #Write monnify virtual account creation logic here
+            pass
 
-        else:
-            if create_account_response.get("status") == "00":
-                data = create_account_response.get("data")
 
-                account = AccountSystem.objects.create(
-                    user_id=user_id,
-                    account_provider="VFD",
-                    company_id=company_id,
-                    account_number=data.get("accountNo"),
-                    account_name=f'{data.get("firstname")} {data.get("lastname")}',
-                    account_type=account_type,
-                    bank_name="VFD Microfinance Bank",
-                    bank_code="999999",
-                    payload=create_account_response,
-                )
+class Transaction(BaseModel):
+    
+    user = models.ForeignKey(
+        User, related_name="transactions", on_delete=models.CASCADE
+    )
+    amount = models.FloatField(validators=[MinValueValidator(0)])
+    transaction_ref = models.UUIDField(default=uuid.uuid4, editable=False)
+    transaction_status = models.CharField(
+        max_length=300,
+        choices=TransactionStatus.choices,
+        default=TransactionStatus.PENDING,
+    )
+    disbursement_source = models.CharField(
+        max_length=300, choices=DisbursementFormType.choices, null=True, blank=True)
+    beneficiary_account_number = models.CharField(max_length=300, null=True, blank=True)
+    beneficiary_bank_code = models.CharField(max_length=300, null=True, blank=True)
+    beneficiary_bank_name = models.CharField(max_length=300, null=True, blank=True)
+    beneficiary_account_name = models.CharField(max_length=300, null=True, blank=True)
+    
+    # --------------------balances-------------------------
+    balance_before = models.FloatField(null=True, blank=True)
+    balance_after = models.FloatField(null=True, blank=True)
+    # ------------------------------------------------------
+    source_account_name = models.CharField(max_length=300, null=True, blank=True)
+    source_account_number = models.CharField(max_length=300, null=True, blank=True)
+    source_bank_code = models.CharField(max_length=300, null=True, blank=True)
+    transaction_type = models.CharField(
+        max_length=300, choices=TransactionType.choices, null=True, blank=True
+    )
+    narration = models.CharField(max_length=500, null=True, blank=True)
+    attempt_payout = models.BooleanField(default=False)
+    is_disbursed = models.BooleanField(default=False)
+    escrow_id = models.CharField(max_length=300, null=True, blank=True)
+    metadata = models.JSONField(default=dict, blank=True, null=True)
 
-                _create_wallet = cls.objects.create(
-                    user_id=user_id, account=account, wallet_type=account_type
-                )
+    def __str__(self) -> str:
+        return f"{self.user}"
 
-                return _create_wallet
-            else:
-                AccountCreationFailure.objects.create(
-                    user_id=user_id,
-                    payload=create_account_response,
-                    account_type=account_type,
-                    account_provider="VFD",
-                    request_payload=data,
-                )
-                return None
-
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "TRANSACTIONS"
+        verbose_name_plural = "TRANSACTIONS"

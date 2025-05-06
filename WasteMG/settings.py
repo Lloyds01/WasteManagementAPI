@@ -42,16 +42,21 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # "waste_auth.apps.WasteAuthConfig",
+
 
 
     #INTERNAL APPS
     "waste_auth",
     "account",
+    
 
 
 
     #EXTERNAL APPS
+    "django_filters",
     "rest_framework",
+    
 ]
 
 MIDDLEWARE = [
@@ -164,6 +169,7 @@ AUTH_USER_MODEL = 'waste_auth.User'
 OTP_SECRET = config('OTP_SECRET', cast=str)
 
 REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
@@ -185,3 +191,4 @@ MAILGUN_API_KEY=config("MAILGUN_API_KEY")
 MAILGUN_URL=config("MAILGUN_URL")
 VFD_ACCESS_TOKEN_LIVE=config("VFD_ACCESS_TOKEN_LIVE")
 VFD_WALLET_CREDENTIALS_LIVE=config("VFD_WALLET_CREDENTIALS_LIVE")
+

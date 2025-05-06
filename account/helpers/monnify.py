@@ -19,6 +19,45 @@ class Monnify:
         self.secret_key = settings.MONNIFY_SECRET_KEY
         self.monnify_source_account = settings.MONNIFY_SOURCE_ACCOUNT
 
+    @classmethod
+    def create_wallet(cls, firstname, middlename, dob, address, gender, bvn, lastname, phone):
+
+        payload = {
+            "firstname": f"{firstname}",
+            "middlename": f"{middlename}",
+            "lastname": f"{lastname}",
+            "dob": f"{dob}",
+            "address": f"{address}",
+            "phone": f"{phone}",
+            "gender": f"{gender}",
+            "bvn": f"{bvn}",
+        }
+
+        if cls.environment == "dev":
+
+            payload["accountNo"] = generate_random_acct_digit()
+            fake_response = {"status": "00", "message": "Successful Creation", "data": payload}
+            return fake_response
+            
+        elif cls.environment == "prod":
+
+            try:
+                # print("in try")
+                filter_url = "wallet2/clientdetails/create"
+                url = cls.base_url + filter_url
+                request_response = requests.request(
+                    "POST", url=url, headers=cls.headers, params=cls.params, json=payload
+                )
+                # print(request_response.text)
+                response = request_response.json()
+                # print(response)
+                # print("completed try")
+                return response
+
+            except requests.exceptions.RequestException as e:
+
+                return {"error": "VFD Request Broken", "message": f"{e}"}
+
     def generate_reference_code(self, length: int = 16):
         """
         Generate reference code with desired length.

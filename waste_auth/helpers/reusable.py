@@ -2,10 +2,10 @@ import base64
 import os
 from requests import exceptions, request
 from string import Template, punctuation
-
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as text
+
 
 
 # Create your reusable function(s) and class(es) here.
@@ -78,12 +78,14 @@ def make_request(request_type: str, params: dict) -> dict:
     """
     try:
         response = request(request_type, **params)
+        # print(response, "HERE IS THE REQUEST MIDDLEWARE BODY !!!!")
         return {
             "status": True,
             "data": response.json(),
             "error": None
         }
     except exceptions.RequestException as error:
+        # print(error, "HERE IS THE ERROR MESSAGE AND EXCEPTION !!!!!")
         return {
             "status": False,
             "data": None,
@@ -149,7 +151,7 @@ def email_sender(
                 url=url,
                 auth=("api", api_key),
                 data={
-                    "from": "ERAMUS Ltd. <postmaster@mg.whispersms.com>",
+                    "from": "Waste Management LTD",
                     "to": recipient,
                     "subject": subject,
                     "html": template,
@@ -180,6 +182,7 @@ def email_sender(
             )
         )
     else:
+        # print("I GOT TO THE ELSE CONDITION !!!!!!!!!!!")
         response = make_request(
             "POST",
             dict(
@@ -193,7 +196,112 @@ def email_sender(
                 }
             )
         )
+        # print(response, "HERE IS THE RESPONSE !!!!")
+
     if response.get("status") == True:
         return dict(email_sender_response=response)
     else:
         return dict(email_sender_response=response)
+
+
+def assign_agent_to_product(waste_pruduct):
+    from waste_auth.models import User, UserType, WasteProduct
+    """ This function assign agent to a newly scheduled product pickup and its checks throuhgh 
+    the agents and assign the most available and the most has the less pickup to do and closest
+    to the user """
+    pruduct = WasteProduct.objects.filter(id=waste_pruduct.id).first()
+    priduct_address = pruduct.user.address
+    if priduct_address:
+        #check if user address string existe in the list of estates in the constant table attribute estate_address
+        pass
+    available_agent = User.objects.filter(user_type=UserType.AGENT, is_active=True)
+    for agent in available_agent:
+        pass
+
+
+        # # Check if the agent has any scheduled pickups
+        # if agent.pickup_set.filter(status="scheduled").exists():
+        #     # If the agent has scheduled pickups, assign them to the product
+        #     print(f"Agent {agent.username} has scheduled pickups.")
+        # else:
+        #     # If the agent doesn't have any scheduled pickups, assign them to the product
+        #     print(f"Agent {agent.username} is available for assignment.")
+        print(agent, "AGENT USER NAME")
+
+
+def get_estate_agent(user_address: str):
+    from waste_auth.models import ConstantTable
+    const = ConstantTable.get_constant_instance()
+    estates = const.estate_address
+
+    for estate in estates:
+        for keyword in estate.get("keywords", []):
+            if keyword.lower() in user_address.lower():
+                agent_id = estate.get("agent_id")
+                # fetch and return the agent
+                try:
+                    return Agent.objects.get(id=agent_id)
+                except Agent.DoesNotExist:
+                    return None
+    return None
+
+def assign_agent_to_product(waste_product):
+    from waste_auth.models import User, WasteProduct, Agent  # adjust import as needed
+    from waste_core.models import ConstantTable
+
+    """
+    This function assigns an agent to a newly scheduled product pickup.
+    It checks through the agents and assigns the most available agent:
+    - one with the fewest pending pickups
+    - and who serves the estate matched in user's address
+    """
+
+    product = WasteProduct.objects.filter(id=waste_product.id).first()
+    product_address = product.user.address if product and product.user else None
+
+    if not product_address:
+        return None  # No address to work with
+
+    # Fetch the constant config
+    constant = ConstantTable.get_constant_instance()
+    estate_config = constant.estate_address  # List of estates and keywords
+
+    matched_estate = None
+
+    # Try to match user's address with estate keywords
+    for estate in estate_config:
+        for keyword in estate.get("keywords", []):
+            if keyword.lower() in product_address.lower():
+                matched_estate = estate.get("estate_name")
+                break
+        if matched_estate:
+            break
+
+    if not matched_estate:
+        return None  # No matching estate found
+
+    # Filter agents who serve the matched estate
+    available_agents = Agent.objects.filter(estate__iexact=matched_estate)
+
+    if not available_agents.exists():
+        return None  # No agents found in that estate
+
+    # Get agent with the least number of pending pickups
+    agents_with_counts = [
+        {
+            "agent": agent,
+            "pending_pickups": WasteProduct.objects.filter(
+                assigned_agent=agent, status="pending"  # or whatever your pending status is
+            ).count()
+        }
+        for agent in available_agents
+    ]
+
+    # Sort to get agent with the least pickups
+    best_agent = sorted(agents_with_counts, key=lambda x: x["pending_pickups"])[0]["agent"]
+
+    # Assign agent to product
+    product.assigned_agent = best_agent
+    product.save()
+
+    return best_agent
