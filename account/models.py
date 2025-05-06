@@ -135,20 +135,19 @@ class Wallet(BaseModel):
         return wallet_ins
 
     @classmethod
-    def create_user_wallet(cls, data, user_id, account_type, company_id=None):
+    def create_user_wallet(cls, data, user_id, account_type):
+        const = ConstantTable.get_constant_instance()
+        account_provider = const.account_provider
 
-        create_account_response = VfdBank.create_wallet(**data)
-
-        if company_id is None:
+        if account_provider == AccountProvider.VFD:
+            create_account_response = VfdBank.create_wallet(**data)
             status_code = create_account_response.get("status")
             if status_code == "00":
                 data = create_account_response.get("data")
                 _account_instance = AccountSystem.objects.filter(
                     user_id=user_id, account_type=account_type
                 )
-
                 if not _account_instance.exists():
-
                     account = AccountSystem.objects.create(
                         user_id=user_id,
                         account_provider="VFD",
@@ -213,52 +212,53 @@ class Wallet(BaseModel):
                         _create_wallet = cls.objects.create(
                             user_id=user_id, account=account, wallet_type=account_type
                         )
-
                         return _create_wallet
+                    else:
+                        AccountCreationFailure.objects.create(
+                            user_id=user_id,
+                            payload=create_account_response,
+                            account_type=account_type,
+                            request_payload=data,
+                            account_provider="VFD",
+                        )
+                    return None
 
+            else:
+                if create_account_response.get("status") == "00":
+                    data = create_account_response.get("data")
+
+                    account = AccountSystem.objects.create(
+                        user_id=user_id,
+                        account_provider="VFD",
+                        company_id=company_id,
+                        account_number=data.get("accountNo"),
+                        account_name=f'{data.get("firstname")} {data.get("lastname")}',
+                        account_type=account_type,
+                        bank_name="VFD Microfinance Bank",
+                        bank_code="999999",
+                        payload=create_account_response,
+                    )
+
+                    _create_wallet = cls.objects.create(
+                        user_id=user_id, account=account, wallet_type=account_type
+                    )
+
+                    return _create_wallet
                 else:
                     AccountCreationFailure.objects.create(
                         user_id=user_id,
                         payload=create_account_response,
                         account_type=account_type,
-                        request_payload=data,
                         account_provider="VFD",
+                        request_payload=data,
                     )
-                return None
-
-        else:
-            if create_account_response.get("status") == "00":
-                data = create_account_response.get("data")
-
-                account = AccountSystem.objects.create(
-                    user_id=user_id,
-                    account_provider="VFD",
-                    company_id=company_id,
-                    account_number=data.get("accountNo"),
-                    account_name=f'{data.get("firstname")} {data.get("lastname")}',
-                    account_type=account_type,
-                    bank_name="VFD Microfinance Bank",
-                    bank_code="999999",
-                    payload=create_account_response,
-                )
-
-                _create_wallet = cls.objects.create(
-                    user_id=user_id, account=account, wallet_type=account_type
-                )
-
-                return _create_wallet
-            else:
-                AccountCreationFailure.objects.create(
-                    user_id=user_id,
-                    payload=create_account_response,
-                    account_type=account_type,
-                    account_provider="VFD",
-                    request_payload=data,
-                )
-                return None
+                    return None
             
-# def generate_ref():
-#     return str(uuid.uuid4())
+        elif account_provider == AccountProvider.MONNIFY:
+            create_account_response = VfdBank.create_wallet(**data)
+            #Write monnify virtual account creation logic here
+            pass
+
 
 class Transaction(BaseModel):
     
