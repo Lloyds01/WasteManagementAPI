@@ -532,6 +532,7 @@ class RecycleAgents(models.Model):
     pickup_success_rate = models.FloatField(default=0.0)
     customer_rating = models.FloatField(default=0.0)
     issues_reported_count = models.IntegerField(default=0)
+    estate = models.CharField(null=True, blank=True)
     identification_number = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

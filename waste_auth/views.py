@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from account.models import AccountSystem, Wallet
 from waste_auth.enums import AccountType
 from .models import( User, OTP, WasteProduct, RecycleAgents)
+from waste_auth.helpers.reusable import assign_agent_to_product
 from .serializers import (
     UserSerializer,
     UserLoginSerializer,
@@ -245,6 +246,7 @@ class wasteProductAPIView(APIView):
         product = WasteProduct.create_product(user=user, **serializer.validated_data)
         if product:
             #ASSIGN AGENT WITHIN THE LOCATION
+            assign_agent_to_product(waste_product=product)
 
             response_data = {
                 "status": 201,
