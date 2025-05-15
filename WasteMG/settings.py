@@ -18,7 +18,7 @@ from decouple import Csv, config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
+ENVIRONMENT = config("ENVIRONMENT", default="dev")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
@@ -192,3 +192,13 @@ MAILGUN_URL=config("MAILGUN_URL")
 VFD_ACCESS_TOKEN_LIVE=config("VFD_ACCESS_TOKEN_LIVE")
 VFD_WALLET_CREDENTIALS_LIVE=config("VFD_WALLET_CREDENTIALS_LIVE")
 
+#Monnify
+MONNIFY_BASE_URL=config("MONNIFY_BASE_URL")
+MONNIFY_TEST_URL=config("MONNIFY_TEST_URL")
+MONNIFY_API_KEY=config("MONNIFY_API_KEY")
+MONNIFY_SECRET_KEY=config("MONNIFY_SECRET_KEY")
+MONNIFY_SOURCE_ACCOUNT=config("MONNIFY_SOURCE_ACCOUNT")
+
+MONNIFY_TEST_API_KEY=config("MONNIFY_TEST_API_KEY")
+MONNIFY_TEST_SECRET_KEY=config("MONNIFY_TEST_SECRET_KEY")
+MONNIFY_TEST_SOURCE_ACCOUNT=config("MONNIFY_TEST_SOURCE_ACCOUNT")

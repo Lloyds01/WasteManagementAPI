@@ -19,12 +19,10 @@ schema_view = get_schema_view(
     permission_classes=[AllowAny, ],
 )
 
-
 urlpatterns = [
     path('', schema_view.with_ui('swagger', cache_timeout=0)),
     path('admin/', admin.site.urls),
-    path('user_auth/', include('waste_auth.urls')),
-    # path('transactions/', include('account.urls')),
+    path('user_auth/', include('waste_auth.urls'))
 
 ]
 
