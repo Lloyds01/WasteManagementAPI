@@ -46,7 +46,6 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     gender = models.CharField(max_length=10, choices=GenderChoices.choices)
     date_of_birth = models.DateField(null=True, blank=True)
     user_type = models.CharField(max_length=12, choices=UserType.choices, default=UserType.USER)
-    # is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
 
     objects = UserManager()

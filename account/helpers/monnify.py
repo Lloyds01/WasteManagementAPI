@@ -14,49 +14,17 @@ class Monnify:
     """
 
     def __init__(self) -> None:
-        self.base_url = settings.MONNIFY_BASE_URL
-        self.api_key = settings.MONNIFY_API_KEY
-        self.secret_key = settings.MONNIFY_SECRET_KEY
-        self.monnify_source_account = settings.MONNIFY_SOURCE_ACCOUNT
+        if settings.ENVIRONMENT == "production":
+            self.base_url = settings.MONNIFY_BASE_URL
+            self.monnify_source_account = settings.MONNIFY_SOURCE_ACCOUNT
+            self.secret_key = settings.MONNIFY_SECRET_KEY
+            self.api_key = settings.MONNIFY_API_KEY
+        else:
+            self.base_url = settings.MONNIFY_TEST_URL
+            self.api_key = settings.MONNIFY_TEST_API_KEY
+            self.secret_key = settings.MONNIFY_TEST_SECRET_KEY
+            self.monnify_source_account = settings.MONNIFY_TEST_SOURCE_ACCOUNT
 
-    @classmethod
-    def create_wallet(cls, firstname, middlename, dob, address, gender, bvn, lastname, phone):
-
-        payload = {
-            "firstname": f"{firstname}",
-            "middlename": f"{middlename}",
-            "lastname": f"{lastname}",
-            "dob": f"{dob}",
-            "address": f"{address}",
-            "phone": f"{phone}",
-            "gender": f"{gender}",
-            "bvn": f"{bvn}",
-        }
-
-        if cls.environment == "dev":
-
-            payload["accountNo"] = generate_random_acct_digit()
-            fake_response = {"status": "00", "message": "Successful Creation", "data": payload}
-            return fake_response
-            
-        elif cls.environment == "prod":
-
-            try:
-                # print("in try")
-                filter_url = "wallet2/clientdetails/create"
-                url = cls.base_url + filter_url
-                request_response = requests.request(
-                    "POST", url=url, headers=cls.headers, params=cls.params, json=payload
-                )
-                # print(request_response.text)
-                response = request_response.json()
-                # print(response)
-                # print("completed try")
-                return response
-
-            except requests.exceptions.RequestException as e:
-
-                return {"error": "VFD Request Broken", "message": f"{e}"}
 
     def generate_reference_code(self, length: int = 16):
         """
@@ -269,21 +237,63 @@ class Monnify:
             return data
 
     def check_monnify_balance(self):
-      account_no = settings.MONNIFY_SOURCE_ACCOUNT
-      endpoint = f"/api/v2/disbursements/wallet-balance?accountNumber={account_no}"
 
-      url = f"{self.base_url}{endpoint}"
-      auth = self.login()
-      if auth.get("status") == True:
-        token = auth.get("token")
-        payload = {}
-        headers = {
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {token}",
-                }
-        response = requests.request("GET", url, headers=headers, data=payload)
+        if settings.ENVIRONMENT == "production":
+            account_no = settings.MONNIFY_SOURCE_ACCOUNT
+        else:
+            account_no = settings.MONNIFY_TEST_SOURCE_ACCOUNT
+        endpoint = f"/api/v2/disbursements/wallet-balance?accountNumber={account_no}"
+
+        url = f"{self.base_url}{endpoint}"
+        auth = self.login()
+        if auth.get("status") == True:
+            token = auth.get("token")
+            payload = {}
+            headers = {
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {token}",
+                    }
+            response = requests.request("GET", url, headers=headers, data=payload)
 
         return response.json()
 
     
-          
+    def create_wallet(self, full_name, dob, bvn, email):
+        wallet_ref = self.generate_reference_code()
+        name = "recycle-pro"
+        wallet_name = name + ("ref"+ wallet_ref)
+        endpoint = "/api/v1/disbursements/wallet"
+        url = f"{self.base_url}{endpoint}"
+        auth = self.login()
+
+        payload = {
+            "walletReference": wallet_ref,
+            "walletName": wallet_name,
+            "customerName": full_name,
+            "bvnDateOfBirth": dob,
+            "bvnDetails": {
+                "bvn": bvn,
+                "bvnDateOfBirth": dob
+            },
+            "customerEmail": email,
+            }
+        if auth.get("status") == True:
+            token = auth.get("token")
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}",
+            }
+        try:
+            response = requests.post(url, headers=headers, json=payload)
+            response_data = response.json()
+
+            if response_data.get("requestSuccessful") == True and response_data.get("responseMessage") == "success":
+                if response_data.get("responseCode") == "0":
+                    print("HERE IS THE WALLET CREATION RESPONSE", response_data)
+                    return dict(status=True, response=response_data.get("responseBody"))
+                return response_data
+
+            return response_data
+
+        except requests.exceptions.RequestException as e:
+            return {"error": "Monnify Request Broken", "message": f"{e}"}
