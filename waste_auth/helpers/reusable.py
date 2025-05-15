@@ -248,7 +248,9 @@ def assign_agent_to_product(waste_product):
                  # Assign agent to product
                 product.agent = agent
                 product.save()
-
+            else:
                 #Check for the list of agents in the estate and make sure the work load is evenly distributed
+                pass
+
     return agent   
                
